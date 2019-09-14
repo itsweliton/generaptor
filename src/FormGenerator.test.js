@@ -43,6 +43,6 @@ describe("Form Generator basic mounting", () => {
   test("It should create a basic input", () => {
     const wrapper = shallow(<FormGenerator schema={schema} />);
     expect(wrapper).toMatchSnapshot()
-    expect(wrapper.find(`name`).props().placeholder).toBe("Name");
+    expect(wrapper.find(`input#le`).props().placeholder).toBe("Name");
   });
 });
