@@ -1,0 +1,25 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Form Generator Mounted Component is created 1`] = `
+<div>
+  <form>
+    <label
+      for="name"
+    >
+      LABLE
+    </label>
+    <input
+      id="name"
+      maxlength="8"
+      minlength="4"
+      name="name"
+      placeholder="Name"
+      required={true}
+      size="10"
+      type="text"
+    />
+  </form>
+</div>
+`;
+
+exports[`Form Generator basic mounting It should create a basic input 1`] = `ShallowWrapper {}`;

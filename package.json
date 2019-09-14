@@ -5,20 +5,27 @@
   "main": "dist/formGenerator.min.js",
   "style": "dist/formGenerator.min.css",
   "repository": {
-      "type": "git",
-      "url": "git+https://github.com/welitonderesende/react-form-generator.git"
+    "type": "git",
+    "url": "git+https://github.com/welitonderesende/react-form-generator.git"
   },
-  "keywords": ["react", "forms", "form-generator"],
+  "keywords": [
+    "react",
+    "forms",
+    "form-generator"
+  ],
   "author": "Weliton de Resende <welitonderesende@gmail.com>",
   "license": "MIT",
   "bugs": {
-      "url": "https://github.com/welitonderesende/react-form-generator/issues"
+    "url": "https://github.com/welitonderesende/react-form-generator/issues"
   },
   "homepage": "https://github.com/welitonderesende/react-form-generator#readme",
   "dependencies": {
+    "enzyme": "^3.10.0",
+    "enzyme-adapter-react-16": "^1.14.0",
     "react": "^16.9.0",
     "react-dom": "^16.9.0",
-    "react-scripts": "3.1.1"
+    "react-scripts": "3.1.1",
+    "react-test-renderer": "^16.9.0"
   },
   "scripts": {
     "start": "react-scripts start",
