@@ -1,4 +1,6 @@
+import React from 'react';
+import ReactDOM from 'react-dom';
 import './index.css';
-import FormGenerator from './FormGenerator';
+import App from './App';
 
-export default FormGenerator;
+ReactDOM.render(<App />, document.getElementById('root'));
