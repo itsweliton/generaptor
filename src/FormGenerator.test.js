@@ -15,7 +15,7 @@ const schema = {
       id: "le",
       type: "input",
       inputType: "text",
-      place: "Name",
+      label: "Name",
       placeholder: "Name",
       model: "name"
     }

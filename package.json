@@ -20,6 +20,7 @@
   },
   "homepage": "https://github.com/welitonderesende/react-form-generator#readme",
   "dependencies": {
+    "@material-ui/core": "^4.4.2",
     "enzyme": "^3.10.0",
     "enzyme-adapter-react-16": "^1.14.0",
     "react": "^16.9.0",
