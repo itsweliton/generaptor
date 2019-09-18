@@ -1,40 +1,46 @@
-import React from 'react'; 
-import FormGenerator from './FormGenerator';
+import React from 'react';
 import { Button, TextField } from '@material-ui/core';
+import FormGenerator from './FormGenerator';
 
 const App = () => {
-  console.log('what? working?')
-  const formGen = new FormGenerator()
-  const schema = { 
+  console.log(`what? working?`);
+  const formGen = new FormGenerator();
+  const schema = {
     fields: [
       {
-        id: "le",
-        type: "input",
-        inputType: "text",
-        label: "Name",
-        placeholder: "Name",
-        model: "name",
-        handleChange: () => { console.log('foi') }
-      }, 
+        id: `le`,
+        type: `input`,
+        inputType: `text`,
+        value: ``,
+        label: `Name`,
+        placeholder: `Name`,
+        model: `name`,
+        handleChange: () => {
+          console.log(`foi`);
+        },
+      },
       {
-        id: "lo",
-        type: "input",
-        inputType: "password",
-        label: "Password",
-        placeholder: "password",
-        model: "password",
-        handleChange: () => {console.log('pass')}
-      }
-    ]
-  }
+        id: `lo`,
+        type: `input`,
+        inputType: `password`,
+        label: `Password`,
+        value: ``,
+        placeholder: `password`,
+        model: `password`,
+        handleChange: () => {
+          console.log(`pass`);
+        },
+      },
+    ],
+  };
   const options = {
     button: {
-      label: "Button, click it",
+      label: `Button, click it`,
       onClick: () => {
-        console.log('Hey, it works');
-      }
-    }
-  }
+        console.log(`Hey, it works`);
+      },
+    },
+  };
 
   const formGenerated = formGen.create(schema, options);
   console.log(formGenerated);
@@ -43,8 +49,7 @@ const App = () => {
       eh
       {formGenerated}
     </div>
-  )
-  
-}
+  );
+};
 
 export default App;
