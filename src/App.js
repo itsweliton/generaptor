@@ -8,10 +8,11 @@ const App = () => {
   const schema = {
     fields: [
       {
-        id: `le`,
+        id: `nameInput`,
         type: `input`,
         inputType: `text`,
         value: ``,
+        name: `nameInput`,
         label: `Name`,
         placeholder: `Name`,
         model: `name`,
@@ -20,13 +21,40 @@ const App = () => {
         },
       },
       {
-        id: `lo`,
+        id: `passwordInput`,
         type: `input`,
         inputType: `password`,
+        name: `passwordInput`,
         label: `Password`,
         value: ``,
         placeholder: `password`,
         model: `password`,
+        handleChange: () => {
+          console.log(`pass`);
+        },
+      },
+      {
+        id: `numberInput`,
+        type: `number`,
+        inputType: `Number`,
+        name: `NumberInput`,
+        label: `Number`,
+        value: ``,
+        placeholder: `Number`,
+        model: `number`,
+        handleChange: () => {
+          console.log(`pass`);
+        },
+      },
+      {
+        id: `emailInput`,
+        type: `email`,
+        inputType: `email`,
+        name: `emailInput`,
+        label: `email`,
+        value: ``,
+        placeholder: `email`,
+        model: `email`,
         handleChange: () => {
           console.log(`pass`);
         },
@@ -36,9 +64,6 @@ const App = () => {
   const options = {
     button: {
       label: `Button, click it`,
-      onClick: () => {
-        console.log(`Hey, it works`);
-      },
     },
   };
 

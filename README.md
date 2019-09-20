@@ -1,13 +1,18 @@
 ## Components to support:
-- Input Text
+- Input Text 
+  - mail ✅
+  - phone [mask]
+  - cep [mask]
 - Input Number
-- Dropdown
-- Date picker
+  - number ✅
+  - currency [custom mask]
 - Checkbox
-- Select 
+- Select
 - Radio
 - Button
 - Upload
+- Date picker
+- Dropdown
 
 Validations to support: 
 - minLength
