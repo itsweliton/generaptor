@@ -67,6 +67,29 @@ const App = () => {
         label: `checkbox`,
         value: false,
       },
+      {
+        id: `selectInput`,
+        type: `select`,
+        inputType: `select`,
+        name: `selectInput`,
+        label: `select`,
+        value: false,
+        helperText: `A helper text used`,
+        selectItems: [
+          {
+            value: 234,
+            label: `Item 2`,
+          },
+          {
+            value: 232,
+            label: `Item 2`,
+          },
+          {
+            value: 235,
+            label: `Item 3`,
+          },
+        ],
+      },
     ],
   };
   const options = {

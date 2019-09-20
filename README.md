@@ -7,7 +7,7 @@
   - number ✅
   - currency [custom mask]
 - Checkbox ✅
-- Select
+- Select ✅
 - Radio
 - Button
 - Upload

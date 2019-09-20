@@ -3,6 +3,12 @@ import TextField from '@material-ui/core/TextField';
 import Checkbox from '@material-ui/core/Checkbox';
 import FormControlLabel from '@material-ui/core/FormControlLabel';
 import Button from '@material-ui/core/Button';
+import FormControl from '@material-ui/core/FormControl';
+import Select from '@material-ui/core/Select';
+import FormHelperText from '@material-ui/core/FormHelperText';
+import InputLabel from '@material-ui/core/InputLabel';
+import MenuItem from '@material-ui/core/MenuItem';
+
 import _ from 'lodash';
 
 const FormBuilder = ({ fields, options }) => {
@@ -25,6 +31,28 @@ const FormBuilder = ({ fields, options }) => {
   const formElements = [];
   fields.map(field => {
     switch (field.type) {
+      case `select`:
+        formElements.push(
+          <FormControl key={field.id}>
+            <InputLabel htmlFor={field.id}>{field.label}</InputLabel>
+            <Select
+              value={values[field.name]}
+              onChange={handleChange}
+              inputProps={{
+                name: field.name,
+                id: field.id,
+              }}
+            >
+              {field.selectItems.map(item => (
+                <MenuItem value={item.value} key={item.value + field.id}>
+                  {item.label}
+                </MenuItem>
+              ))}
+            </Select>
+            <FormHelperText>{field.helperText || null}</FormHelperText>
+          </FormControl>,
+        );
+        break;
       case `checkbox`:
         formElements.push(
           <FormControlLabel
@@ -35,7 +63,7 @@ const FormBuilder = ({ fields, options }) => {
                 value={values[field.name]}
                 color="primary"
                 name={field.name}
-                labelPlacement={field.position || `end`}
+                labelplacement={field.position || `end`}
               />
             }
             key={field.id}
