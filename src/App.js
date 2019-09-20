@@ -74,7 +74,7 @@ const App = () => {
         name: `dateInput`,
         label: `date`,
         value: new Date(),
-        format: `MM/dd/yyyy`,
+        format: `dd/MM/yyyy`,
       },
       {
         id: `hourInput`,
