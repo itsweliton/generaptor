@@ -1,7 +1,7 @@
 {
   "name": "react-form-generator",
   "version": "0.1.0",
-  "description": "A React library to generate dinamic forms with material-ui",
+  "description": "A React library to generate dynamic forms with material-ui",
   "main": "dist/formGenerator.min.js",
   "style": "dist/formGenerator.min.css",
   "repository": {
