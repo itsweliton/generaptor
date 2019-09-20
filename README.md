@@ -8,7 +8,7 @@
   - currency [custom mask]
 - Checkbox ✅
 - Select ✅
-- Radio
+- Radio ✅
 - Button
 - Upload
 - Date picker

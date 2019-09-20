@@ -90,6 +90,30 @@ const App = () => {
           },
         ],
       },
+      {
+        id: `radioInput`,
+        type: `radio`,
+        inputType: `radio`,
+        name: `radioInput`,
+        label: `radio`,
+        value: false,
+        legend: `Notice radio value must be a string`,
+        selectItems: [
+          {
+            value: `something`,
+            label: `Radios 2`,
+          },
+          {
+            value: `234`,
+            label: `Radio 3`,
+          },
+          {
+            value: `232`,
+            label: `Item 3`,
+            disabled: true,
+          },
+        ],
+      },
     ],
   };
   const options = {

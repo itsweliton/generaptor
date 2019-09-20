@@ -4,6 +4,9 @@ import Checkbox from '@material-ui/core/Checkbox';
 import FormControlLabel from '@material-ui/core/FormControlLabel';
 import Button from '@material-ui/core/Button';
 import FormControl from '@material-ui/core/FormControl';
+import FormLabel from '@material-ui/core/FormLabel';
+import Radio from '@material-ui/core/Radio';
+import RadioGroup from '@material-ui/core/RadioGroup';
 import Select from '@material-ui/core/Select';
 import FormHelperText from '@material-ui/core/FormHelperText';
 import InputLabel from '@material-ui/core/InputLabel';
@@ -23,6 +26,7 @@ const FormBuilder = ({ fields, options }) => {
 
   const handleChange = event => {
     let { value } = event.target;
+    console.log(`haha`, value, value.type);
     if (event.target.type === `checkbox`) {
       value = event.target.checked;
     }
@@ -31,6 +35,30 @@ const FormBuilder = ({ fields, options }) => {
   const formElements = [];
   fields.map(field => {
     switch (field.type) {
+      case `radio`:
+        formElements.push(
+          <FormControl component="fieldset" key={field.id}>
+            <FormLabel component="legend">{field.legend || null}</FormLabel>
+            <RadioGroup
+              aria-label={field.legend}
+              name={field.name}
+              value={values[field.name]}
+              onChange={handleChange}
+            >
+              {field.selectItems.map(item => (
+                <FormControlLabel
+                  value={item.value}
+                  disabled={item.disabled || false}
+                  control={<Radio />}
+                  label={item.label}
+                  labelplacement={item.position || `end`}
+                  key={item.value + field.id}
+                />
+              ))}
+            </RadioGroup>
+          </FormControl>,
+        );
+        break;
       case `select`:
         formElements.push(
           <FormControl key={field.id}>
