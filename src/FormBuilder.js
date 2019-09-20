@@ -30,9 +30,14 @@ const FormBuilder = ({ fields, options }) => {
   });
   const [values, setValues] = useState(initialState);
   const [selectedDate, setSelectedDate] = React.useState(new Date());
+  const [selectedHour, setSelectedHour] = React.useState(new Date());
 
   const handleDateChange = date => {
     setSelectedDate(date);
+  };
+
+  const handleHourChange = hour => {
+    setSelectedHour(hour);
   };
 
   const handleChange = event => {
@@ -45,6 +50,22 @@ const FormBuilder = ({ fields, options }) => {
   const formElements = [];
   fields.map(field => {
     switch (field.type) {
+      case `hour`:
+        formElements.push(
+          <MuiPickersUtilsProvider utils={DateFnsUtils} key={field.id}>
+            <KeyboardTimePicker
+              margin="normal"
+              id={field.id}
+              label={field.label}
+              value={selectedHour}
+              onChange={handleHourChange}
+              KeyboardButtonProps={{
+                'aria-label': field.label,
+              }}
+            />
+          </MuiPickersUtilsProvider>,
+        );
+        break;
       case `date`:
         formElements.push(
           <MuiPickersUtilsProvider utils={DateFnsUtils} key={field.id}>
@@ -155,7 +176,7 @@ const FormBuilder = ({ fields, options }) => {
           options.button.onClick !== undefined
             ? options.button.onClick
             : () => {
-                console.log(values, selectedDate);
+                console.log(values, selectedDate, selectedHour);
               }
         }
       >

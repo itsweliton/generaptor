@@ -77,6 +77,15 @@ const App = () => {
         format: `MM/dd/yyyy`,
       },
       {
+        id: `hourInput`,
+        type: `hour`,
+        inputType: `hour`,
+        name: `hourInput`,
+        label: `hour`,
+        value: new Date(),
+        format: `MM/dd/yyyy`,
+      },
+      {
         id: `selectInput`,
         type: `select`,
         inputType: `select`,
