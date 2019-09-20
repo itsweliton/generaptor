@@ -68,6 +68,15 @@ const App = () => {
         value: false,
       },
       {
+        id: `dateInput`,
+        type: `date`,
+        inputType: `date`,
+        name: `dateInput`,
+        label: `date`,
+        value: new Date(),
+        format: `MM/dd/yyyy`,
+      },
+      {
         id: `selectInput`,
         type: `select`,
         inputType: `select`,

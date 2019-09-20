@@ -11,7 +11,13 @@ import Select from '@material-ui/core/Select';
 import FormHelperText from '@material-ui/core/FormHelperText';
 import InputLabel from '@material-ui/core/InputLabel';
 import MenuItem from '@material-ui/core/MenuItem';
-
+import Grid from '@material-ui/core/Grid';
+import {
+  MuiPickersUtilsProvider,
+  KeyboardTimePicker,
+  KeyboardDatePicker,
+} from '@material-ui/pickers';
+import DateFnsUtils from '@date-io/date-fns';
 import _ from 'lodash';
 
 const FormBuilder = ({ fields, options }) => {
@@ -23,10 +29,14 @@ const FormBuilder = ({ fields, options }) => {
     return (initialState[eln] = valNames[id]);
   });
   const [values, setValues] = useState(initialState);
+  const [selectedDate, setSelectedDate] = React.useState(new Date());
+
+  const handleDateChange = date => {
+    setSelectedDate(date);
+  };
 
   const handleChange = event => {
     let { value } = event.target;
-    console.log(`haha`, value, value.type);
     if (event.target.type === `checkbox`) {
       value = event.target.checked;
     }
@@ -35,6 +45,26 @@ const FormBuilder = ({ fields, options }) => {
   const formElements = [];
   fields.map(field => {
     switch (field.type) {
+      case `date`:
+        formElements.push(
+          <MuiPickersUtilsProvider utils={DateFnsUtils} key={field.id}>
+            <KeyboardDatePicker
+              disableToolbar
+              variant="inline"
+              format={field.format}
+              margin="normal"
+              id={field.id}
+              label={field.label}
+              value={selectedDate}
+              name={field.name}
+              onChange={handleDateChange}
+              KeyboardButtonProps={{
+                'aria-label': field.label,
+              }}
+            />
+          </MuiPickersUtilsProvider>,
+        );
+        break;
       case `radio`:
         formElements.push(
           <FormControl component="fieldset" key={field.id}>
@@ -125,7 +155,7 @@ const FormBuilder = ({ fields, options }) => {
           options.button.onClick !== undefined
             ? options.button.onClick
             : () => {
-                console.log(values);
+                console.log(values, selectedDate);
               }
         }
       >
