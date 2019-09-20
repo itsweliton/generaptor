@@ -6,7 +6,7 @@
 - Input Number
   - number ✅
   - currency [custom mask]
-- Checkbox
+- Checkbox ✅
 - Select
 - Radio
 - Button

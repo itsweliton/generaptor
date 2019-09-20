@@ -59,6 +59,14 @@ const App = () => {
           console.log(`pass`);
         },
       },
+      {
+        id: `checkboxInput`,
+        type: `checkbox`,
+        inputType: `checkbox`,
+        name: `checkboxInput`,
+        label: `checkbox`,
+        value: false,
+      },
     ],
   };
   const options = {
