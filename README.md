@@ -1,6 +1,6 @@
-[![npm](https://img.shields.io/npm/v/npm-auto-version.svg?maxAge=2592000)](https://www.npmjs.com/package/generaptor)
-[![downloads](https://img.shields.io/npm/dt/npm-auto-version.svg?maxAge=2592000)](https://www.npmjs.com/package/generaptor)
 
+[![npm](https://img.shields.io/npm/v/generaptor.svg?maxAge=2592000)](https://www.npmjs.com/package/generaptor)
+[![downloads](https://img.shields.io/npm/dt/generaptor.svg?maxAge=2592000)](https://www.npmjs.com/package/generaptor)
 
 ## Components to support:
 - Input Text 
