@@ -1,8 +1,13 @@
+[![npm](https://img.shields.io/npm/v/npm-auto-version.svg?maxAge=2592000)](https://www.npmjs.com/package/generaptor)
+[![downloads](https://img.shields.io/npm/dt/npm-auto-version.svg?maxAge=2592000)](https://www.npmjs.com/package/generaptor)
+
+
 ## Components to support:
 - Input Text 
   - mail ✅
   - phone [mask]
   - cep [mask]
+  - cpf [mask]
 - Input Number
   - number ✅
   - currency [custom mask]
@@ -14,7 +19,6 @@
 - Date picker 
   - hour ✅
   - date ✅
-- Dropdown
 
 Validations to support: 
 - minLength
