@@ -1,6 +1,6 @@
 {
   "name": "generaptor",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "description": "A React library to generate dynamic forms with material-ui at the speed of a Velociraptor 🦖",
   "main": "dist/formGenerator.min.js",
   "style": "dist/formGenerator.min.css",
