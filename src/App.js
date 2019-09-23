@@ -1,9 +1,7 @@
 import React from 'react';
-import { Button, TextField } from '@material-ui/core';
 import FormGenerator from './FormGenerator';
 
 const App = () => {
-  console.log(`what? working?`);
   const formGen = new FormGenerator();
   const schema = {
     fields: [
@@ -16,9 +14,6 @@ const App = () => {
         label: `Name`,
         placeholder: `Name`,
         model: `name`,
-        handleChange: () => {
-          console.log(`foi`);
-        },
       },
       {
         id: `passwordInput`,
@@ -29,9 +24,6 @@ const App = () => {
         value: ``,
         placeholder: `password`,
         model: `password`,
-        handleChange: () => {
-          console.log(`pass`);
-        },
       },
       {
         id: `numberInput`,
@@ -42,9 +34,6 @@ const App = () => {
         value: ``,
         placeholder: `Number`,
         model: `number`,
-        handleChange: () => {
-          console.log(`pass`);
-        },
       },
       {
         id: `emailInput`,
@@ -55,9 +44,6 @@ const App = () => {
         value: ``,
         placeholder: `email`,
         model: `email`,
-        handleChange: () => {
-          console.log(`pass`);
-        },
       },
       {
         id: `checkboxInput`,
@@ -141,7 +127,6 @@ const App = () => {
   };
 
   const formGenerated = formGen.create(schema, options);
-  console.log(formGenerated);
   return (
     <div>
       eh
