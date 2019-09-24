@@ -45,7 +45,6 @@
     "eslint-plugin-react": "^7.14.3",
     "eslint-plugin-react-hooks": "^1.6.1",
     "jest": "24.8.0",
-    "lodash": "^4.17.15",
     "postcss-loader": "3.0.0",
     "prettier": "^1.18.2",
     "prop-types": "^15.7.2",

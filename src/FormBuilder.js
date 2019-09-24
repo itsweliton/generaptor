@@ -18,15 +18,13 @@ import {
   KeyboardDatePicker,
 } from '@material-ui/pickers';
 import DateFnsUtils from '@date-io/date-fns';
-import _ from 'lodash';
 
 const FormBuilder = ({ fields, options }) => {
-  const elNames = _.map(fields, `name`);
-  const valNames = _.map(fields, `value`);
+  const elNames = fields.map((fi) => fi.name)
+  const initialValNames = fields.map((fi) => fi.initialValue)
   const initialState = {};
   elNames.map((eln, id) => {
-    // eslint-disable-next-line no-return-assign
-    return (initialState[eln] = valNames[id]);
+    return (initialState[eln] = initialValNames[id] || false);
   });
   const [values, setValues] = useState(initialState);
   const [selectedDate, setSelectedDate] = React.useState(new Date());
