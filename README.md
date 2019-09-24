@@ -141,6 +141,7 @@ const schema = {
 
 ## Supported Components
 - Input Text 
+  - text ✅
   - mail ✅
 - Input Number
   - number ✅
