@@ -5,7 +5,7 @@
 
 [![https://nodei.co/npm/generaptor.png?downloads=true&downloadRank=true&stars=true](https://nodei.co/npm/generaptor.png?downloads=true&downloadRank=true&stars=true)](https://www.npmjs.com/package/generaptor)
 
-## This repo is a Alpha version
+## This repo is a Alpha version and therefore things can change very suddenly
 - Please feel free to send new issues, or PR's 
 
 ### Getting Stated: 
@@ -14,7 +14,7 @@
 `import Generaptor from 'generaptor'`;
 
 ```
-const formGen = new FormGenerator();
+const formGen = new Generaptor();
 const formGenerated = formGen.create(schema, options);
 
 const App = () => <>{formGenerated}</>;
