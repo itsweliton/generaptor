@@ -5,9 +5,9 @@ const path = require('path');
 module.exports = {
   entry: 'src/index.js',
   output: {
-    filename: 'index.js',
+    path: path.resolve(__dirname, './'),
     libraryTarget: 'commonjs2',
-    path: path.resolve(__dirname, 'build'),
+    filename: 'index.js',
   },
   mode: 'production',
   module: {
@@ -64,5 +64,8 @@ module.exports = {
   },
   plugins: [],
   devtool: 'source-map',
+  externals: {
+    'react': 'commonjs react' 
+  }
 };
 
