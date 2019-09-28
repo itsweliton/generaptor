@@ -33,6 +33,7 @@
     "babel-plugin-named-asset-import": "^0.3.3",
     "babel-preset-react": "^6.24.1",
     "babel-preset-react-app": "^9.0.2",
+    "calidators": "^3.0.2",
     "css-loader": "2.1.1",
     "date-fns": "^2.0.0-beta.5",
     "enzyme": "^3.10.0",
@@ -48,16 +49,27 @@
     "postcss-loader": "3.0.0",
     "prettier": "^1.18.2",
     "prop-types": "^15.7.2",
-    "react": "^16.9.0",
-    "react-dom": "^16.9.0",
     "react-test-renderer": "^16.9.0",
     "style-loader": "1.0.0",
-    "webpack": "^4.40.2"
+    "use-deep-compare-effect": "^1.2.0",
+    "webpack": "^4.41.0"
+  },
+  "devDependencies": {
+    "html-webpack-plugin": "^3.2.0",
+    "webpack-cli": "^3.3.9",
+    "webpack-dev-server": "^3.8.1",
+    "react": "^16.9.0",
+    "react-dom": "^16.9.0"
+  },
+  "peerDependencies": {
+    "react": "^16.9.0",
+    "react-dom": "^16.9.0"
   },
   "scripts": {
     "start": "webpack --watch",
     "build": "webpack",
-    "test": "jest -u --coverage"
+    "test": "jest -u --coverage",
+    "dev": "webpack-dev-server --mode=development"
   },
   "browserslist": {
     "production": [
@@ -115,8 +127,5 @@
       "jest-watch-typeahead/filename",
       "jest-watch-typeahead/testname"
     ]
-  },
-  "devDependencies": {
-    "webpack-cli": "^3.3.9"
   }
 }

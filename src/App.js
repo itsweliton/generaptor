@@ -2,18 +2,16 @@ import React from 'react';
 import FormGenerator from './FormGenerator';
 
 const App = () => {
-  const formGen = new FormGenerator();
   const schema = {
     fields: [
       {
         id: `nameInput`,
+        name: `nameInput`,
         type: `input`,
         inputType: `text`,
-        value: ``,
-        name: `nameInput`,
+        initialValue: ``,
         label: `Name`,
         placeholder: `Name`,
-        model: `name`,
       },
       {
         id: `passwordInput`,
@@ -21,9 +19,8 @@ const App = () => {
         inputType: `password`,
         name: `passwordInput`,
         label: `Password`,
-        value: ``,
+        initialValue: ``,
         placeholder: `password`,
-        model: `password`,
       },
       {
         id: `numberInput`,
@@ -31,9 +28,8 @@ const App = () => {
         inputType: `Number`,
         name: `NumberInput`,
         label: `Number`,
-        value: ``,
+        initialValue: ``,
         placeholder: `Number`,
-        model: `number`,
       },
       {
         id: `emailInput`,
@@ -41,9 +37,8 @@ const App = () => {
         inputType: `email`,
         name: `emailInput`,
         label: `email`,
-        value: ``,
+        initialValue: ``,
         placeholder: `email`,
-        model: `email`,
       },
       {
         id: `checkboxInput`,
@@ -51,7 +46,7 @@ const App = () => {
         inputType: `checkbox`,
         name: `checkboxInput`,
         label: `checkbox`,
-        value: false,
+        initialValue: false,
       },
       {
         id: `dateInput`,
@@ -59,7 +54,7 @@ const App = () => {
         inputType: `date`,
         name: `dateInput`,
         label: `date`,
-        value: new Date(),
+        initialValue: new Date(),
         format: `dd/MM/yyyy`,
       },
       {
@@ -68,7 +63,7 @@ const App = () => {
         inputType: `hour`,
         name: `hourInput`,
         label: `hour`,
-        value: new Date(),
+        initialValue: new Date(),
         format: `MM/dd/yyyy`,
       },
       {
@@ -77,7 +72,7 @@ const App = () => {
         inputType: `select`,
         name: `selectInput`,
         label: `select`,
-        value: false,
+        initialValue: false,
         helperText: `A helper text used`,
         selectItems: [
           {
@@ -100,7 +95,7 @@ const App = () => {
         inputType: `radio`,
         name: `radioInput`,
         label: `radio`,
-        value: false,
+        initialValue: false,
         legend: `Notice radio value must be a string`,
         selectItems: [
           {
@@ -125,7 +120,7 @@ const App = () => {
       label: `Button, click it`,
     },
   };
-
+  const formGen = new FormGenerator();
   const formGenerated = formGen.create(schema, options);
   return (
     <div>
