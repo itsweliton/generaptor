@@ -95,7 +95,7 @@ const schema = {
       label: `select`,
       initialValue: false,
       helperText: `A helper text used`,
-      selectItems: [
+      options: [
         {
           value: 234,
           label: `Item 2`,
@@ -118,7 +118,7 @@ const schema = {
       label: `radio`,
       initialValue: false,
       legend: `Notice radio value must be a string`,
-      selectItems: [
+      options: [
         {
           value: `something`,
           label: `Radios 2`,

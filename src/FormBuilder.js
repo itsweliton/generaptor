@@ -94,7 +94,7 @@ const FormBuilder = ({ fields, options }) => {
               value={values[field.name]}
               onChange={handleChange}
             >
-              {field.selectItems.map(item => (
+              {field.options.map(item => (
                 <FormControlLabel
                   value={item.value}
                   disabled={item.disabled || false}
@@ -120,7 +120,7 @@ const FormBuilder = ({ fields, options }) => {
                 id: field.id,
               }}
             >
-              {field.selectItems.map(item => (
+              {field.options.map(item => (
                 <MenuItem value={item.value} key={item.value + field.id}>
                   {item.label}
                 </MenuItem>
