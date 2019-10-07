@@ -1,11 +1,6 @@
-import React, { useEffect } from 'react'; 
+import React, { useEffect, useReducer } from 'react'; 
 import useDeepCompareEffect from 'use-deep-compare-effect';
-
-const initialState = {
-  values: {},
-  errors: {},
-  submitted: false,
-}
+import * as validators from 'calidators';
 
 function validationReducer(state, action) {
   switch (action.type) {
@@ -24,10 +19,16 @@ function validationReducer(state, action) {
   }
 }
 
+const initialState = {
+  values: {},
+  errors: {},
+  submitted: false,
+}
+
 const useValidation = config => {
   const [state, dispatch] = useReducer(validationReducer, initialState);
 
-  useDeepCompareEffect(() => {
+  useEffect(() => {
     const errors = validateFields(state.fields, config.fields);
     dispatch({ type: 'validate', payload: errors });
   }, [state.fields, config.fields]);
@@ -60,8 +61,8 @@ const useValidation = config => {
 };
 
 function validateField(fieldValue = '', fieldConfig) {
-  for (let validatorName in fieldConfig) {
-    const validatorConfig = fieldConfig[validatorName];
+  for (let validatorName in fieldConfig.validators) {
+    const validatorConfig = fieldConfig.validators[validatorName];
     const validator = validators[validatorName];
     const configuredValidator = validator(validatorConfig);
     const errorMessage = configuredValidator(fieldValue);
@@ -76,10 +77,12 @@ function validateField(fieldValue = '', fieldConfig) {
 function validateFields(fieldValues, fieldConfigs) {
   const errors = {};
   for (let fieldName in fieldConfigs) {
-    const fieldConfig = fieldConfigs[fieldName];
-    const fieldValue = fieldValues[fieldName];
+    const fieldConfig = fieldConfigs[fieldName.id];
+    const fieldValue = fieldValues[fieldName.value];
 
     errors[fieldName] = validateField(fieldValue, fieldConfig)
   }
   return errors;
 }
+
+export default useValidation;
