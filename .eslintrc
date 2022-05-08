@@ -1,10 +1,5 @@
 {
-  "extends": [
-    "airbnb",
-    "prettier",
-    "prettier/react",
-    "plugin:jsx-a11y/recommended"
-  ],
+  "extends": ["airbnb", "prettier", "plugin:jsx-a11y/recommended"],
   "plugins": ["react", "prettier", "jsx-a11y"],
   "globals": {
     "window": true,

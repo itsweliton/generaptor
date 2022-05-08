@@ -1,5 +1,5 @@
-import React from 'react';
-import FormGenerator from './FormGenerator';
+import React from "react";
+import FormGenerator from "./FormGenerator";
 
 const App = () => {
   const schema = {
@@ -10,7 +10,7 @@ const App = () => {
         type: `input`,
         inputType: `text`,
         initialValue: ``,
-        label: `Name`,
+        label: `NEW NAME`,
         placeholder: `Name`,
       },
       {
@@ -120,14 +120,9 @@ const App = () => {
       label: `Button, click it`,
     },
   };
-  const formGen = new FormGenerator();
-  const formGenerated = formGen.create(schema, options);
-  return (
-    <div>
-      eh
-      {formGenerated}
-    </div>
-  );
+  const former = new FormGenerator();
+  const formGenerated = former.create(schema, options);
+  return <div>{formGenerated}</div>;
 };
 
 export default App;
