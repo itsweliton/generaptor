@@ -1,5 +1,4 @@
-import React, { useEffect, useReducer } from 'react'; 
-import useDeepCompareEffect from 'use-deep-compare-effect';
+import React, { useEffect, useReducer } from 'react';
 import * as validators from 'calidators';
 
 function validationReducer(state, action) {
