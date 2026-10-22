@@ -43,6 +43,8 @@ function validatorBag(field, type) {
   if (type === 'phone') assign('telephone', true);
   if (type === 'cpf') assign('cpf', true);
   if (type === 'cep') assign('cep', true);
+  if (type === 'ssn') assign('ssn', true);
+  if (type === 'postal') assign('postal', true);
   if (type === 'currency') assign('currency', field.currencyRules || true);
   if (type === 'date' || type === 'time' || type === 'datetime') assign('date', true);
 
@@ -157,11 +159,13 @@ export function normalizeSchema(schema = {}) {
 
   return {
     id: schema.id,
+    formId: schema.formId,
     title: schema.title || '',
     description: schema.description || '',
     layout,
     columns: schema.columns || 1,
     submitLabel: schema.submitLabel,
+    button: schema.button,
     locale: schema.locale,
     fields,
     groups,

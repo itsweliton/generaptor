@@ -262,6 +262,44 @@ describe('FormGenerator', () => {
   it('applies letter and digit pattern masks', () => {
     expect(applyMask({ mask: 'AA-####' }, 'ab1234')).toBe('AB-1234');
     expect(applyMask({ type: 'cep' }, '01310100')).toBe('01310-100');
+    expect(applyMask({ type: 'ssn' }, '123456789')).toBe('123-45-6789');
+    expect(applyMask({ type: 'postal' }, '941071234')).toBe('94107-1234');
+  });
+
+  it('places the submit button from the schema', () => {
+    render(
+      <FormGenerator
+        schema={{
+          submitLabel: 'Send intake',
+          button: { fullWidth: true, align: 'center' },
+          fields: [{ name: 'city', label: 'City' }],
+        }}
+      />,
+    );
+
+    const button = screen.getByRole('button', { name: 'Send intake' });
+    const actions = button.parentElement;
+    expect(button).toHaveClass('MuiButton-fullWidth');
+    expect(actions).toHaveAttribute('data-align', 'center');
+    expect(actions).toHaveAttribute('data-wide', 'true');
+  });
+
+  it('keeps a typed value when the label changes', async () => {
+    const user = userEvent.setup();
+    const { rerender } = render(
+      <FormGenerator schema={{ fields: [{ name: 'city', label: 'City' }] }} button={false} />,
+    );
+
+    await user.type(screen.getByRole('textbox', { name: 'City' }), 'Lisbon');
+    rerender(
+      <FormGenerator
+        schema={{ fields: [{ name: 'city', label: 'Town', placeholder: 'Lisbon' }] }}
+        button={false}
+      />,
+    );
+
+    expect(screen.getByRole('textbox', { name: 'Town' })).toHaveValue('Lisbon');
+    expect(screen.getByPlaceholderText('Lisbon')).toBeInTheDocument();
   });
 
   it('keeps the factory API', () => {

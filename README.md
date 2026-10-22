@@ -43,7 +43,7 @@ export function Join() {
 }
 ```
 
-`values` are what the inputs show. `raw` is the unmasked payload: digits for phone, CPF, and CEP, and a number for currency.
+`values` are what the inputs show. `raw` is the unmasked payload: digits for phone, Social Security number, and postal code, and a number for currency.
 
 The older factory still works:
 
@@ -121,9 +121,9 @@ Validators run on blur, then again as the field changes. Submit validates everyt
 }
 ```
 
-Built in: `required`, `minLength`, `maxLength`, `min`, `max`, `email`, `telephone`, `cpf`, `cep`, `currency`, `date`, and `custom`.
+Built in: `required`, `minLength`, `maxLength`, `min`, `max`, `email`, `telephone`, `ssn`, `postal`, `currency`, `date`, and `custom`.
 
-`type: 'email' | 'phone' | 'cpf' | 'cep' | 'currency' | 'date'` turns the matching check on for you. Pass `validators: { cpf: false }` to opt out. A string or `{ message }` replaces the default error. `minLength` and `maxLength` accept a number or `{ value, message }`. `verifyValidation(valid, errors, values)` runs after each check. A ref can call `validate()`, `getValues()`, `getRawValues()`, and `reset()`.
+`type: 'email' | 'phone' | 'ssn' | 'postal' | 'currency' | 'date'` turns the matching check on for you. Pass `validators: { ssn: false }` to opt out. A string or `{ message }` replaces the default error. `minLength` and `maxLength` accept a number or `{ value, message }`. `verifyValidation(valid, errors, values)` runs after each check. A ref can call `validate()`, `getValues()`, `getRawValues()`, and `reset()`.
 
 ```jsx
 <FormGenerator
@@ -143,8 +143,10 @@ Built in: `required`, `minLength`, `maxLength`, `min`, `max`, `email`, `telephon
 | Mask     | Type              | What you see      | `raw` on submit                   |
 | -------- | ----------------- | ----------------- | --------------------------------- |
 | Phone    | `phone`           | `(11) 98765-4321` | digits                            |
-| CEP      | `cep`             | `01310-100`       | 8 digits                          |
-| CPF      | `cpf`             | `529.982.247-25`  | 11 digits                         |
+| Social Security number | `ssn`    | `123-45-6789`     | 9 digits                          |
+| Postal code            | `postal` | `94107` or `94107-1234` | 5 or 9 digits               |
+| CEP (legacy)           | `cep`    | `01310-100`       | 8 digits                          |
+| CPF (legacy)           | `cpf`    | `529.982.247-25`  | 11 digits                         |
 | Currency | `currency`        | `R$ 10,00`        | number, last two digits are cents |
 | Pattern  | `mask: 'AA-####'` | `AB-1234`         | letters and digits                |
 
@@ -271,18 +273,24 @@ Hooks you can target: `.generaptor`, `.generaptor-field`, `.generaptor-group`, `
 
 ## Builder
 
-The first item in the examples nav is the builder. Add a block for any field the library renders: text, email, password, number, long text, select, radio, checkbox, switch, date, time, date and time, phone, CEP, CPF, currency, and upload. Click a block to edit its label, name, placeholder, helper text, options, and width.
+The first item in the examples nav is the builder. Add a block for any field the library renders: text, email, password, number, long text, select, radio, checkbox, switch, date, time, date and time, phone, Social Security number, postal code, currency, and upload. Add a group when the form should be split into sections, the same layout as the Groups example. Click a block to edit its label, name, placeholder, helper text, options, width, and which group it belongs to.
+
+Every form gets a `formId`. Clearing the page starts a new form and a new id. The id is stored with the draft and written on the schema as `formId`.
+
+The panel on the right can show the schema or the finished form. Schema is the object you pass to `FormGenerator`. Form renders that schema with the current theme. Edits to a block show on that block straight away, and on the finished form while it is open.
+
+The submit control has a label, a wide option, and left, center, or right alignment. The label is `submitLabel`. Width and alignment are `button.fullWidth` and `button.align` (`left`, `center`, or `right`). The same button is drawn at the bottom of the page and on the finished form.
 
 Validation on a block is written into the schema:
 
 - required, with an optional message
 - min and max length, with optional messages
 - min and max for numbers, with optional messages
-- the format check for email, phone, CPF, CEP, currency, and date, which you can turn off or give a message
+- the format check for email, phone, Social Security number, postal code, currency, and date, which you can turn off or give a message
 - min and max amount for currency
 - max file size in megabytes
 
-The panel on the right is the object you pass to `FormGenerator`. Copy or download it. The draft, including validation, stays in `localStorage` under `generaptor.builder`, so leaving the builder or reloading the page keeps the form.
+Copy or download the schema from that panel. The draft, including groups, validation, and `formId`, stays in `localStorage` under `generaptor.builder`, so leaving the builder or reloading the page keeps the form.
 
 ## Deploy the examples
 

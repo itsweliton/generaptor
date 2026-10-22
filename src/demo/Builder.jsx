@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
+import Button from '@mui/material/Button';
+import { ThemeProvider } from '@mui/material/styles';
 import { FormGenerator } from '../FormGenerator';
+import { present } from './widgets';
 
 const BLOCKS = [
   { type: 'text', label: 'Text', defaultLabel: 'Text' },
@@ -15,8 +18,8 @@ const BLOCKS = [
   { type: 'time', label: 'Time', defaultLabel: 'Time' },
   { type: 'datetime', label: 'Date & time', defaultLabel: 'Date and time' },
   { type: 'phone', label: 'Phone', defaultLabel: 'Phone' },
-  { type: 'cep', label: 'CEP', defaultLabel: 'CEP' },
-  { type: 'cpf', label: 'CPF', defaultLabel: 'CPF' },
+  { type: 'ssn', label: 'Social Security', defaultLabel: 'Social Security number' },
+  { type: 'postal', label: 'Postal code', defaultLabel: 'Postal code' },
   { type: 'currency', label: 'Currency', defaultLabel: 'Amount' },
   { type: 'file', label: 'Upload', defaultLabel: 'File' },
 ];
@@ -28,23 +31,28 @@ const TEXT_TYPES = new Set([
   'number',
   'textarea',
   'phone',
-  'cep',
-  'cpf',
+  'ssn',
+  'postal',
   'currency',
 ]);
 const FIELD_TYPES = new Set(BLOCKS.map((block) => block.type));
-const LENGTH_TYPES = new Set(['text', 'password', 'textarea', 'email', 'phone', 'cep', 'cpf']);
+const LENGTH_TYPES = new Set(['text', 'password', 'textarea', 'email', 'phone', 'ssn', 'postal']);
 const FORMAT_CHECKS = {
   email: { key: 'email', label: 'Check email', placeholder: 'Enter a valid email' },
   phone: { key: 'telephone', label: 'Check phone', placeholder: 'Enter a valid phone number' },
-  cpf: { key: 'cpf', label: 'Check CPF', placeholder: 'Enter a valid CPF' },
-  cep: { key: 'cep', label: 'Check CEP', placeholder: 'Enter a valid CEP' },
+  ssn: {
+    key: 'ssn',
+    label: 'Check Social Security number',
+    placeholder: 'Enter a valid Social Security number',
+  },
+  postal: { key: 'postal', label: 'Check postal code', placeholder: 'Enter a valid postal code' },
   currency: { key: 'currency', label: 'Check amount', placeholder: 'Enter a valid amount' },
   date: { key: 'date', label: 'Check date', placeholder: 'Enter a valid date' },
   time: { key: 'date', label: 'Check time', placeholder: 'Enter a valid time' },
   datetime: { key: 'date', label: 'Check date and time', placeholder: 'Enter a valid date' },
 };
 const STORAGE_KEY = 'generaptor.builder';
+const SUBMIT_ALIGNS = ['left', 'center', 'right'];
 
 function optionalNumber(value) {
   if (value === '' || value == null) return undefined;
@@ -57,60 +65,110 @@ function storedText(value) {
   return text || undefined;
 }
 
+function publicType(type) {
+  if (type === 'cpf') return 'ssn';
+  if (type === 'cep') return 'postal';
+  return type || 'text';
+}
+
+function newFormId() {
+  return crypto.randomUUID();
+}
+
+function readField(field) {
+  if (!field?.id) return null;
+  const type = publicType(field.type);
+  if (!FIELD_TYPES.has(type)) return null;
+  return {
+    kind: 'field',
+    id: String(field.id),
+    name: String(field.name || 'field'),
+    type,
+    label: String(field.label || field.name || 'Field'),
+    nameCustom: Boolean(field.nameCustom),
+    placeholder: field.placeholder ? String(field.placeholder) : undefined,
+    helperText: field.helperText ? String(field.helperText) : undefined,
+    required: Boolean(field.required),
+    requiredMessage: storedText(
+      typeof field.required === 'string' ? field.required : field.requiredMessage,
+    ),
+    minLength: optionalNumber(field.minLength),
+    maxLength: optionalNumber(field.maxLength),
+    minLengthMessage: storedText(field.minLengthMessage),
+    maxLengthMessage: storedText(field.maxLengthMessage),
+    minMessage: storedText(field.minMessage),
+    maxMessage: storedText(field.maxMessage),
+    formatCheck: field.formatCheck === false ? false : undefined,
+    formatMessage: storedText(field.formatMessage),
+    currencyMin: optionalNumber(field.currencyMin),
+    currencyMax: optionalNumber(field.currencyMax),
+    maxSizeMb: optionalNumber(field.maxSizeMb),
+    columnSpan: Number(field.columnSpan) === 2 ? 2 : undefined,
+    rows: field.rows ? Number(field.rows) : undefined,
+    min: field.min ?? undefined,
+    max: field.max ?? undefined,
+    currency: field.currency ? String(field.currency) : undefined,
+    locale: field.locale ? String(field.locale) : undefined,
+    accept: field.accept ? String(field.accept) : undefined,
+    multiple: Boolean(field.multiple) || undefined,
+    options: Array.isArray(field.options)
+      ? field.options.map((option) => ({
+          value: option?.value ?? '',
+          label: String(option?.label ?? ''),
+        }))
+      : undefined,
+  };
+}
+
+function readBlock(block) {
+  if (!block) return null;
+  if (block.kind === 'group') {
+    return {
+      kind: 'group',
+      id: String(block.id || newFormId()),
+      label: String(block.label || 'Group'),
+      description: String(block.description || ''),
+      columns: Number(block.columns) === 2 ? 2 : 1,
+      fields: (block.fields || []).map(readField).filter(Boolean),
+    };
+  }
+  return readField(block);
+}
+
+function collectIds(blocks) {
+  const ids = [];
+  blocks.forEach((block) => {
+    ids.push(block.id);
+    if (block.kind === 'group') block.fields.forEach((field) => ids.push(field.id));
+  });
+  return ids;
+}
+
 function readBuilder() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
     const data = JSON.parse(raw);
-    if (!Array.isArray(data?.fields)) return null;
-    const fields = data.fields
-      .filter((field) => field && FIELD_TYPES.has(field.type) && field.id)
-      .map((field) => ({
-        id: String(field.id),
-        name: String(field.name || 'field'),
-        type: field.type,
-        label: String(field.label || field.name || 'Field'),
-        nameCustom: Boolean(field.nameCustom),
-        placeholder: field.placeholder ? String(field.placeholder) : undefined,
-        helperText: field.helperText ? String(field.helperText) : undefined,
-        required: Boolean(field.required),
-        requiredMessage: storedText(
-          typeof field.required === 'string' ? field.required : field.requiredMessage,
-        ),
-        minLength: optionalNumber(field.minLength),
-        maxLength: optionalNumber(field.maxLength),
-        minLengthMessage: storedText(field.minLengthMessage),
-        maxLengthMessage: storedText(field.maxLengthMessage),
-        minMessage: storedText(field.minMessage),
-        maxMessage: storedText(field.maxMessage),
-        formatCheck: field.formatCheck === false ? false : undefined,
-        formatMessage: storedText(field.formatMessage),
-        currencyMin: optionalNumber(field.currencyMin),
-        currencyMax: optionalNumber(field.currencyMax),
-        maxSizeMb: optionalNumber(field.maxSizeMb),
-        columnSpan: Number(field.columnSpan) === 2 ? 2 : undefined,
-        rows: field.rows ? Number(field.rows) : undefined,
-        min: field.min ?? undefined,
-        max: field.max ?? undefined,
-        currency: field.currency ? String(field.currency) : undefined,
-        locale: field.locale ? String(field.locale) : undefined,
-        accept: field.accept ? String(field.accept) : undefined,
-        multiple: Boolean(field.multiple) || undefined,
-        options: Array.isArray(field.options)
-          ? field.options.map((option) => ({
-              value: option?.value ?? '',
-              label: String(option?.label ?? ''),
-            }))
-          : undefined,
-      }));
+    const source = Array.isArray(data?.blocks)
+      ? data.blocks
+      : Array.isArray(data?.fields)
+        ? data.fields
+        : null;
+    if (!source) return null;
+    const blocks = source.map(readBlock).filter(Boolean);
     return {
-      fields,
+      formId: typeof data.formId === 'string' && data.formId ? data.formId : newFormId(),
+      blocks,
       page: {
         title: String(data.page?.title || ''),
         columns: Number(data.page?.columns) === 2 ? 2 : 1,
         submitLabel: String(data.page?.submitLabel || ''),
+        submitWide: Boolean(data.page?.submitWide),
+        submitAlign: SUBMIT_ALIGNS.includes(data.page?.submitAlign)
+          ? data.page.submitAlign
+          : 'left',
       },
-      selectedId: fields.some((field) => field.id === data.selectedId) ? data.selectedId : null,
+      selectedId: collectIds(blocks).includes(data.selectedId) ? data.selectedId : null,
     };
   } catch {
     return null;
@@ -245,25 +303,133 @@ function exportField(field) {
   return exported;
 }
 
-export function exportSchema(fields, page) {
-  const schema = {};
+function exportGroup(group, usedIds) {
+  const base = slugName(group.label);
+  const id = uniqueName(
+    usedIds.map((name) => ({ name })),
+    !group.label || base === 'field' ? 'group' : base,
+  );
+  usedIds.push(id);
+  const exported = {
+    id,
+    label: group.label || '',
+    fields: group.fields.map(exportField),
+  };
+  if (storedText(group.description)) exported.description = storedText(group.description);
+  if (group.columns > 1) exported.columns = group.columns;
+  return exported;
+}
+
+export function exportSchema(blocks, page, formId) {
+  const schema = { formId };
   if (page.title.trim()) schema.title = page.title.trim();
   if (page.columns > 1) schema.columns = page.columns;
   if (page.submitLabel.trim()) schema.submitLabel = page.submitLabel.trim();
-  schema.fields = fields.map(exportField);
+  const button = {};
+  if (page.submitWide) button.fullWidth = true;
+  if (page.submitAlign && page.submitAlign !== 'left') button.align = page.submitAlign;
+  if (Object.keys(button).length) schema.button = button;
+
+  const hasGroups = blocks.some((block) => block.kind === 'group');
+  if (!hasGroups) {
+    schema.fields = blocks.filter((block) => block.kind === 'field').map(exportField);
+    return schema;
+  }
+
+  const groups = [];
+  const usedIds = [];
+  let loose = [];
+  const flush = () => {
+    if (!loose.length) return;
+    groups.push(exportGroup({ label: '', description: '', columns: 1, fields: loose }, usedIds));
+    loose = [];
+  };
+  blocks.forEach((block) => {
+    if (block.kind === 'group') {
+      flush();
+      groups.push(exportGroup(block, usedIds));
+      return;
+    }
+    loose.push(block);
+  });
+  flush();
+  schema.layout = 'groups';
+  schema.groups = groups;
   return schema;
 }
 
-function BlockPreview({ field, appearance }) {
-  const schema = useMemo(() => ({ fields: [exportField(field)] }), [field]);
-  return <FormGenerator schema={schema} button={false} {...appearance} />;
+function fieldsIn(blocks) {
+  return blocks.flatMap((block) => (block.kind === 'group' ? block.fields : [block]));
 }
 
-function Inspector({ field, columns, onChange }) {
+function renamed(blocks, previous, next) {
+  if (!next.nameCustom && next.label !== previous.label) {
+    const others = fieldsIn(blocks).filter((field) => field.id !== next.id);
+    return { ...next, kind: 'field', name: uniqueName(others, slugName(next.label)) };
+  }
+  return { ...next, kind: 'field' };
+}
+
+function BlockPreview({ field, appearance }) {
+  const schema = useMemo(
+    () => ({ fields: [{ ...exportField(field), id: `preview-${field.id}` }] }),
+    [field],
+  );
+  return (
+    <FormGenerator
+      schema={schema}
+      button={false}
+      theme={appearance?.theme}
+      styles={appearance?.styles}
+      classNames={appearance?.classNames}
+    />
+  );
+}
+
+function SubmitButton({ page, appearance, type = 'button' }) {
+  const label = page.submitLabel.trim() || 'Submit';
+  const align = SUBMIT_ALIGNS.includes(page.submitAlign) ? page.submitAlign : 'left';
+  const button = (
+    <div
+      className="generaptor-actions"
+      data-align={align}
+      data-wide={page.submitWide ? 'true' : 'false'}
+    >
+      <Button
+        type={type}
+        variant={appearance?.styles?.button?.variant || 'contained'}
+        color={appearance?.styles?.button?.color || 'primary'}
+        fullWidth={Boolean(page.submitWide)}
+        disableElevation={appearance?.styles?.button?.disableElevation !== false}
+        tabIndex={type === 'button' ? -1 : undefined}
+        sx={appearance?.styles?.button?.sx}
+      >
+        {label}
+      </Button>
+    </div>
+  );
+  if (!appearance?.theme) return button;
+  return <ThemeProvider theme={appearance.theme}>{button}</ThemeProvider>;
+}
+
+function Inspector({ field, columns, groups, groupId, onChange, onPlace }) {
   const patch = (partial) => onChange({ ...field, ...partial });
 
   return (
     <div className="block-settings">
+      {groups?.length ? (
+        <label>
+          Group
+          <select value={groupId || ''} onChange={(event) => onPlace(field.id, event.target.value)}>
+            <option value="">Page</option>
+            {groups.map((group) => (
+              <option key={group.id} value={group.id}>
+                {group.label || 'Group'}
+              </option>
+            ))}
+          </select>
+        </label>
+      ) : null}
       <label>
         Label
         <input value={field.label} onChange={(event) => patch({ label: event.target.value })} />
@@ -567,66 +733,281 @@ function editOption(options, index, partial) {
   return options.map((option, item) => (item === index ? { ...option, ...partial } : option));
 }
 
+function FieldBlock({
+  field,
+  index,
+  total,
+  columns,
+  groupId,
+  groups,
+  selected,
+  appearance,
+  onSelect,
+  onShift,
+  onRemove,
+  onChange,
+  onPlace,
+  onDragStart,
+  onDrop,
+}) {
+  const meta = BLOCKS.find((block) => block.type === field.type);
+  return (
+    <article
+      className={selected ? 'block is-selected' : 'block'}
+      data-span={columns > 1 ? field.columnSpan || 1 : 1}
+      onClick={(event) => {
+        event.stopPropagation();
+        onSelect(field.id);
+      }}
+      onDragOver={(event) => {
+        event.preventDefault();
+        event.dataTransfer.dropEffect = 'move';
+      }}
+      onDrop={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        onDrop(groupId, field.id);
+      }}
+    >
+      <div className="block-bar">
+        <button
+          type="button"
+          className="block-grip"
+          draggable
+          aria-label={`Drag ${field.label}`}
+          onDragStart={(event) => {
+            event.stopPropagation();
+            event.dataTransfer.effectAllowed = 'move';
+            event.dataTransfer.setData('text/plain', field.id);
+            onDragStart(field.id);
+          }}
+          onDragEnd={() => onDragStart(null)}
+        >
+          ⋮⋮
+        </button>
+        <span>{meta?.label || field.type}</span>
+        <div className="block-actions">
+          <button
+            type="button"
+            aria-label="Move up"
+            disabled={index === 0}
+            onClick={(event) => {
+              event.stopPropagation();
+              onShift(groupId, field.id, -1);
+            }}
+          >
+            Up
+          </button>
+          <button
+            type="button"
+            aria-label="Move down"
+            disabled={index === total - 1}
+            onClick={(event) => {
+              event.stopPropagation();
+              onShift(groupId, field.id, 1);
+            }}
+          >
+            Down
+          </button>
+          <button
+            type="button"
+            aria-label={`Remove ${field.label}`}
+            onClick={(event) => {
+              event.stopPropagation();
+              onRemove(field.id);
+            }}
+          >
+            Remove
+          </button>
+        </div>
+      </div>
+      <div className="block-preview">
+        <BlockPreview field={field} appearance={appearance} />
+      </div>
+      {selected ? (
+        <Inspector
+          field={field}
+          columns={columns}
+          groups={groups}
+          groupId={groupId}
+          onChange={onChange}
+          onPlace={onPlace}
+        />
+      ) : null}
+    </article>
+  );
+}
+
+function moveList(list, id, direction) {
+  const index = list.findIndex((item) => item.id === id);
+  const target = index + direction;
+  if (index < 0 || target < 0 || target >= list.length) return list;
+  const next = [...list];
+  const [item] = next.splice(index, 1);
+  next.splice(target, 0, item);
+  return next;
+}
+
+function reorderList(list, fromId, toId) {
+  if (!fromId || fromId === toId) return list;
+  const next = [...list];
+  const from = next.findIndex((item) => item.id === fromId);
+  const to = next.findIndex((item) => item.id === toId);
+  if (from < 0 || to < 0) return list;
+  const [item] = next.splice(from, 1);
+  next.splice(to, 0, item);
+  return next;
+}
+
 export default function Builder({ appearance }) {
   const stored = useMemo(() => readBuilder(), []);
-  const [fields, setFields] = useState(() => stored?.fields ?? []);
+  const [formId, setFormId] = useState(() => stored?.formId ?? newFormId());
+  const [blocks, setBlocks] = useState(() => stored?.blocks ?? []);
   const [selectedId, setSelectedId] = useState(() => stored?.selectedId ?? null);
   const [dragId, setDragId] = useState(null);
+  const [panel, setPanel] = useState('schema');
+  const [previewValues, setPreviewValues] = useState(null);
   const [page, setPage] = useState(
-    () => stored?.page ?? { title: '', columns: 1, submitLabel: '' },
+    () =>
+      stored?.page ?? {
+        title: '',
+        columns: 1,
+        submitLabel: '',
+        submitWide: false,
+        submitAlign: 'left',
+      },
   );
   const [copiedJson, setCopiedJson] = useState('');
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ fields, page, selectedId }));
-  }, [fields, page, selectedId]);
-  const schema = useMemo(() => exportSchema(fields, page), [fields, page]);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ formId, blocks, page, selectedId }));
+  }, [formId, blocks, page, selectedId]);
+  const schema = useMemo(() => exportSchema(blocks, page, formId), [blocks, page, formId]);
   const json = JSON.stringify(schema, null, 2);
   const mode = appearance?.tokens?.mode;
   const copied = copiedJson === json;
+  const groups = blocks.filter((block) => block.kind === 'group');
 
   function addBlock(type) {
-    const block = createBlock(type, fields);
-    setFields((current) => [...current, block]);
-    setSelectedId(block.id);
+    if (type === 'group') {
+      const group = {
+        kind: 'group',
+        id: newFormId(),
+        label: `Group ${groups.length + 1}`,
+        description: '',
+        columns: page.columns > 1 ? page.columns : 1,
+        fields: [],
+      };
+      setBlocks((current) => [...current, group]);
+      setSelectedId(group.id);
+      return;
+    }
+    const field = { kind: 'field', ...createBlock(type, fieldsIn(blocks)) };
+    setBlocks((current) => {
+      const parent = current.find(
+        (block) =>
+          block.kind === 'group' &&
+          (block.id === selectedId || block.fields.some((item) => item.id === selectedId)),
+      );
+      if (!parent) return [...current, field];
+      return current.map((block) =>
+        block.id === parent.id ? { ...block, fields: [...block.fields, field] } : block,
+      );
+    });
+    setSelectedId(field.id);
   }
 
   function updateField(next) {
-    setFields((current) =>
-      current.map((field) => {
-        if (field.id !== next.id) return field;
-        if (!next.nameCustom && next.label !== field.label) {
-          const others = current.filter((item) => item.id !== next.id);
-          return { ...next, name: uniqueName(others, slugName(next.label)) };
+    setBlocks((current) =>
+      current.map((block) => {
+        if (block.kind === 'group') {
+          return {
+            ...block,
+            fields: block.fields.map((field) =>
+              field.id === next.id ? renamed(current, field, next) : field,
+            ),
+          };
         }
-        return next;
+        return block.id === next.id ? renamed(current, block, next) : block;
       }),
     );
   }
 
-  function move(fromId, toId) {
-    if (!fromId || fromId === toId) return;
-    setFields((current) => {
-      const next = [...current];
-      const from = next.findIndex((field) => field.id === fromId);
-      const to = next.findIndex((field) => field.id === toId);
-      if (from < 0 || to < 0) return current;
-      const [item] = next.splice(from, 1);
-      next.splice(to, 0, item);
-      return next;
+  function updateGroup(id, partial) {
+    setBlocks((current) =>
+      current.map((block) => (block.id === id ? { ...block, ...partial } : block)),
+    );
+  }
+
+  function placeField(fieldId, groupId) {
+    setBlocks((current) => {
+      let field = null;
+      const without = current
+        .map((block) => {
+          if (block.kind === 'group') {
+            return {
+              ...block,
+              fields: block.fields.filter((item) => {
+                if (item.id !== fieldId) return true;
+                field = item;
+                return false;
+              }),
+            };
+          }
+          if (block.id === fieldId) {
+            field = block;
+            return null;
+          }
+          return block;
+        })
+        .filter(Boolean);
+      if (!field) return current;
+      if (!groupId) return [...without, field];
+      return without.map((block) =>
+        block.kind === 'group' && block.id === groupId
+          ? { ...block, fields: [...block.fields, field] }
+          : block,
+      );
     });
   }
 
-  function shift(id, direction) {
-    setFields((current) => {
-      const index = current.findIndex((field) => field.id === id);
-      const target = index + direction;
-      if (index < 0 || target < 0 || target >= current.length) return current;
-      const next = [...current];
-      const [item] = next.splice(index, 1);
-      next.splice(target, 0, item);
-      return next;
+  function move(parentId, fromId, toId) {
+    setBlocks((current) => {
+      if (!parentId) return reorderList(current, fromId, toId);
+      return current.map((block) =>
+        block.id === parentId
+          ? { ...block, fields: reorderList(block.fields, fromId, toId) }
+          : block,
+      );
     });
+  }
+
+  function shift(parentId, id, direction) {
+    setBlocks((current) => {
+      if (!parentId) return moveList(current, id, direction);
+      return current.map((block) =>
+        block.id === parentId ? { ...block, fields: moveList(block.fields, id, direction) } : block,
+      );
+    });
+  }
+
+  function removeBlock(id) {
+    setBlocks((current) =>
+      current.flatMap((block) => {
+        if (block.id === id) return [];
+        if (block.kind !== 'group') return [block];
+        return [{ ...block, fields: block.fields.filter((field) => field.id !== id) }];
+      }),
+    );
+    if (selectedId === id) setSelectedId(null);
+  }
+
+  function startNewForm() {
+    setFormId(newFormId());
+    setBlocks([]);
+    setSelectedId(null);
+    setPreviewValues(null);
+    setPage({ title: '', columns: 1, submitLabel: '', submitWide: false, submitAlign: 'left' });
   }
 
   async function copySchema() {
@@ -652,6 +1033,9 @@ export default function Builder({ appearance }) {
     <div className="builder">
       <div className="builder-canvas">
         <div className="builder-palette" role="toolbar" aria-label="Add a block">
+          <button type="button" onClick={() => addBlock('group')}>
+            Group
+          </button>
           {BLOCKS.map((block) => (
             <button key={block.type} type="button" onClick={() => addBlock(block.type)}>
               {block.label}
@@ -692,6 +1076,8 @@ export default function Builder({ appearance }) {
                 <option value="2">2</option>
               </select>
             </label>
+          </div>
+          <div className="builder-submit">
             <label>
               Submit label
               <input
@@ -702,31 +1088,56 @@ export default function Builder({ appearance }) {
                 }
               />
             </label>
+            <label className="block-check">
+              <input
+                type="checkbox"
+                checked={Boolean(page.submitWide)}
+                onChange={(event) =>
+                  setPage((current) => ({ ...current, submitWide: event.target.checked }))
+                }
+              />
+              Wide
+            </label>
+            <div className="builder-align" role="group" aria-label="Submit button alignment">
+              {SUBMIT_ALIGNS.map((align) => (
+                <button
+                  key={align}
+                  type="button"
+                  aria-pressed={(page.submitAlign || 'left') === align}
+                  className={(page.submitAlign || 'left') === align ? 'is-active' : undefined}
+                  onClick={() => setPage((current) => ({ ...current, submitAlign: align }))}
+                >
+                  {align.charAt(0).toUpperCase() + align.slice(1)}
+                </button>
+              ))}
+            </div>
           </div>
+          <p className="builder-formid">
+            Form ID <code>{formId}</code>
+          </p>
 
-          {fields.length === 0 ? (
+          {blocks.length === 0 ? (
             <div className="builder-empty">
               <p>This page is blank.</p>
-              <p>Add a block above. Each one becomes a field in the schema.</p>
+              <p>Add a field or a group. Each one is written into the schema.</p>
             </div>
           ) : (
             <div className="builder-stack">
-              {fields.map((field, index) => {
-                const meta = BLOCKS.find((block) => block.type === field.type);
-                const selected = field.id === selectedId;
-                return (
-                  <article
-                    key={field.id}
-                    className={selected ? 'block is-selected' : 'block'}
-                    data-span={page.columns > 1 ? field.columnSpan || 1 : 1}
-                    onClick={() => setSelectedId(field.id)}
+              {blocks.map((block, index) =>
+                block.kind === 'group' ? (
+                  <section
+                    key={block.id}
+                    className={
+                      block.id === selectedId ? 'builder-group is-selected' : 'builder-group'
+                    }
+                    onClick={() => setSelectedId(block.id)}
                     onDragOver={(event) => {
                       event.preventDefault();
                       event.dataTransfer.dropEffect = 'move';
                     }}
                     onDrop={(event) => {
                       event.preventDefault();
-                      move(dragId || event.dataTransfer.getData('text/plain'), field.id);
+                      move(null, dragId || event.dataTransfer.getData('text/plain'), block.id);
                       setDragId(null);
                     }}
                   >
@@ -735,95 +1146,220 @@ export default function Builder({ appearance }) {
                         type="button"
                         className="block-grip"
                         draggable
-                        aria-label={`Drag ${field.label}`}
+                        aria-label={`Drag ${block.label}`}
                         onDragStart={(event) => {
+                          event.stopPropagation();
                           event.dataTransfer.effectAllowed = 'move';
-                          event.dataTransfer.setData('text/plain', field.id);
-                          setDragId(field.id);
+                          event.dataTransfer.setData('text/plain', block.id);
+                          setDragId(block.id);
                         }}
                         onDragEnd={() => setDragId(null)}
                       >
                         ⋮⋮
                       </button>
-                      <span>{meta?.label || field.type}</span>
+                      <span>Group</span>
                       <div className="block-actions">
                         <button
                           type="button"
-                          aria-label="Move up"
+                          aria-label="Move group up"
                           disabled={index === 0}
                           onClick={(event) => {
                             event.stopPropagation();
-                            shift(field.id, -1);
+                            shift(null, block.id, -1);
                           }}
                         >
                           Up
                         </button>
                         <button
                           type="button"
-                          aria-label="Move down"
-                          disabled={index === fields.length - 1}
+                          aria-label="Move group down"
+                          disabled={index === blocks.length - 1}
                           onClick={(event) => {
                             event.stopPropagation();
-                            shift(field.id, 1);
+                            shift(null, block.id, 1);
                           }}
                         >
                           Down
                         </button>
                         <button
                           type="button"
-                          aria-label={`Remove ${field.label}`}
+                          aria-label={`Remove ${block.label}`}
                           onClick={(event) => {
                             event.stopPropagation();
-                            setFields((current) => current.filter((item) => item.id !== field.id));
-                            if (selected) setSelectedId(null);
+                            removeBlock(block.id);
                           }}
                         >
                           Remove
                         </button>
                       </div>
                     </div>
-                    <div className="block-preview">
-                      <BlockPreview field={field} appearance={appearance} />
-                    </div>
-                    {selected ? (
-                      <Inspector field={field} columns={page.columns} onChange={updateField} />
-                    ) : null}
-                  </article>
-                );
-              })}
+                    {block.id === selectedId ? (
+                      <div className="block-settings">
+                        <label>
+                          Label
+                          <input
+                            value={block.label}
+                            onClick={(event) => event.stopPropagation()}
+                            onChange={(event) =>
+                              updateGroup(block.id, { label: event.target.value })
+                            }
+                          />
+                        </label>
+                        <label>
+                          Columns
+                          <select
+                            value={String(block.columns || 1)}
+                            onClick={(event) => event.stopPropagation()}
+                            onChange={(event) =>
+                              updateGroup(block.id, { columns: Number(event.target.value) })
+                            }
+                          >
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                          </select>
+                        </label>
+                        <label className="builder-group-description">
+                          Description
+                          <input
+                            value={block.description}
+                            onClick={(event) => event.stopPropagation()}
+                            onChange={(event) =>
+                              updateGroup(block.id, { description: event.target.value })
+                            }
+                          />
+                        </label>
+                      </div>
+                    ) : (
+                      <h3 className="builder-group-title">{block.label}</h3>
+                    )}
+                    {block.fields.length === 0 ? (
+                      <p className="builder-group-empty">
+                        This group is empty. Add a field while it is selected.
+                      </p>
+                    ) : (
+                      <div
+                        className="builder-stack"
+                        style={{ '--builder-columns': block.columns || 1 }}
+                      >
+                        {block.fields.map((field, fieldIndex) => (
+                          <FieldBlock
+                            key={field.id}
+                            field={field}
+                            index={fieldIndex}
+                            total={block.fields.length}
+                            columns={block.columns || 1}
+                            groupId={block.id}
+                            groups={groups}
+                            selected={field.id === selectedId}
+                            appearance={appearance}
+                            onSelect={setSelectedId}
+                            onShift={shift}
+                            onRemove={removeBlock}
+                            onChange={updateField}
+                            onPlace={placeField}
+                            onDragStart={setDragId}
+                            onDrop={(parentId, targetId) => {
+                              move(parentId, dragId, targetId);
+                              setDragId(null);
+                            }}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </section>
+                ) : (
+                  <FieldBlock
+                    key={block.id}
+                    field={block}
+                    index={index}
+                    total={blocks.length}
+                    columns={page.columns}
+                    groupId={null}
+                    groups={groups}
+                    selected={block.id === selectedId}
+                    appearance={appearance}
+                    onSelect={setSelectedId}
+                    onShift={shift}
+                    onRemove={removeBlock}
+                    onChange={updateField}
+                    onPlace={placeField}
+                    onDragStart={setDragId}
+                    onDrop={(parentId, targetId) => {
+                      move(parentId, dragId, targetId);
+                      setDragId(null);
+                    }}
+                  />
+                ),
+              )}
             </div>
           )}
-          {fields.length ? (
-            <button
-              type="button"
-              className="builder-clear"
-              onClick={() => {
-                setFields([]);
-                setSelectedId(null);
-              }}
-            >
-              Clear page
+          <div className="builder-submit-preview" aria-hidden="true">
+            <SubmitButton page={page} appearance={appearance} />
+          </div>
+          {blocks.length ? (
+            <button type="button" className="builder-clear" onClick={startNewForm}>
+              New form
             </button>
           ) : null}
         </section>
       </div>
 
-      <aside className="builder-json" aria-label="Exported schema">
+      <aside
+        className={panel === 'form' ? 'builder-json is-form' : 'builder-json'}
+        aria-label={panel === 'form' ? 'Rendered form' : 'Exported schema'}
+      >
         <header>
-          <div>
-            <p className="eyebrow">Export</p>
-            <h3>Schema</h3>
-          </div>
-          <div className="builder-json-actions">
-            <button type="button" onClick={copySchema}>
-              {copied ? 'Copied' : 'Copy'}
+          <div className="builder-switch" role="tablist" aria-label="Schema or form">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={panel === 'schema'}
+              className={panel === 'schema' ? 'is-active' : undefined}
+              onClick={() => setPanel('schema')}
+            >
+              Schema
             </button>
-            <button type="button" onClick={downloadSchema}>
-              Download
+            <button
+              type="button"
+              role="tab"
+              aria-selected={panel === 'form'}
+              className={panel === 'form' ? 'is-active' : undefined}
+              onClick={() => setPanel('form')}
+            >
+              Form
             </button>
           </div>
+          {panel === 'schema' ? (
+            <div className="builder-json-actions">
+              <button type="button" onClick={copySchema}>
+                {copied ? 'Copied' : 'Copy'}
+              </button>
+              <button type="button" onClick={downloadSchema}>
+                Download
+              </button>
+            </div>
+          ) : null}
         </header>
-        <pre>{json}</pre>
+        {panel === 'schema' ? (
+          <pre>{json}</pre>
+        ) : (
+          <div className="builder-preview">
+            <FormGenerator
+              key={formId}
+              schema={schema}
+              {...appearance}
+              button={{
+                label: page.submitLabel.trim() || 'Submit',
+                fullWidth: Boolean(page.submitWide),
+                align: page.submitAlign || 'left',
+              }}
+              onSubmit={(values) => setPreviewValues(present(values))}
+            />
+            {previewValues ? (
+              <pre className="builder-preview-values">{JSON.stringify(previewValues, null, 2)}</pre>
+            ) : null}
+          </div>
+        )}
       </aside>
     </div>
   );

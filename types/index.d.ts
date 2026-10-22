@@ -45,7 +45,15 @@ export interface Field {
   min?: number;
   max?: number;
   step?: number | string;
-  mask?: 'phone' | 'cep' | 'cpf' | 'currency' | (string & {}) | ((value: string, field: Field) => string);
+  mask?:
+    | 'phone'
+    | 'cep'
+    | 'cpf'
+    | 'ssn'
+    | 'postal'
+    | 'currency'
+    | (string & {})
+    | ((value: string, field: Field) => string);
   unmask?: (value: unknown, field: Field) => unknown;
   locale?: string;
   currency?: string;
@@ -86,11 +94,13 @@ export interface FieldGroup {
 
 export interface Schema {
   id?: string;
+  formId?: string;
   title?: string;
   description?: string;
   layout?: 'stack' | 'grid' | 'groups' | 'group' | 'tabs';
   columns?: number;
   submitLabel?: string;
+  button?: { label?: string; fullWidth?: boolean; align?: 'left' | 'center' | 'right' };
   locale?: unknown;
   fields?: Field[];
   groups?: FieldGroup[];
@@ -128,7 +138,12 @@ export interface DefinedStyles {
     density?: string;
     cssVars?: CSSProperties;
     layout?: { columns?: number; gap?: number | string };
-    field?: { variant?: string; size?: 'small' | 'medium'; fullWidth?: boolean; sx?: SxProps<Theme> };
+    field?: {
+      variant?: string;
+      size?: 'small' | 'medium';
+      fullWidth?: boolean;
+      sx?: SxProps<Theme>;
+    };
     button?: { variant?: string; color?: string; fullWidth?: boolean; sx?: SxProps<Theme> };
     form?: CSSProperties;
     group?: CSSProperties;
@@ -166,9 +181,28 @@ export interface SubmitMeta {
 export interface FormGeneratorProps {
   schema: Schema;
   options?: Partial<FormGeneratorProps>;
-  button?: false | { label?: string; variant?: string; color?: string; onClick?: (values: Values, event: unknown) => void; sx?: SxProps<Theme> };
+  button?:
+    | false
+    | {
+        label?: string;
+        variant?: string;
+        color?: string;
+        fullWidth?: boolean;
+        align?: 'left' | 'center' | 'right';
+        onClick?: (values: Values, event: unknown) => void;
+        sx?: SxProps<Theme>;
+      };
   onSubmit?: (values: Values, meta: SubmitMeta) => void;
-  onChange?: (values: Values, meta: { name: string; value: unknown; errors: Record<string, string>; valid: boolean; raw: Values }) => void;
+  onChange?: (
+    values: Values,
+    meta: {
+      name: string;
+      value: unknown;
+      errors: Record<string, string>;
+      valid: boolean;
+      raw: Values;
+    },
+  ) => void;
   onHandleChange?: FormGeneratorProps['onChange'];
   onClick?: (values: Values, event: unknown) => void;
   onInvalid?: (values: Values, errors: Record<string, string>, event: unknown) => void;

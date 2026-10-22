@@ -128,7 +128,7 @@ export const FormGenerator = forwardRef(function FormGenerator(props, ref) {
 
   const normalized = useMemo(() => normalizeSchema(schemaProp), [schemaProp]);
   const initialValues = useMemo(() => buildValues(normalized.fields), [normalized]);
-  const schemaKey = normalized.fields.map((field) => field.name).join('|');
+  const structureKey = normalized.fields.map((field) => `${field.name}:${field.type}`).join('|');
   const [values, setValues] = useState(initialValues);
   const [errors, setErrors] = useState({});
   const [tab, setTab] = useState(0);
@@ -138,13 +138,23 @@ export const FormGenerator = forwardRef(function FormGenerator(props, ref) {
   const touchedRef = useRef({});
   const submittedRef = useRef(false);
   const skipSchemaReset = useRef(true);
+  const seenStructure = useRef(structureKey);
 
   useEffect(() => {
     if (skipSchemaReset.current) {
       skipSchemaReset.current = false;
+      seenStructure.current = structureKey;
       return;
     }
+    if (seenStructure.current === structureKey) return;
+    seenStructure.current = structureKey;
+    const previous = valuesRef.current;
     const nextValues = buildValues(normalized.fields);
+    normalized.fields.forEach((field) => {
+      if (Object.prototype.hasOwnProperty.call(previous, field.name)) {
+        nextValues[field.name] = previous[field.name];
+      }
+    });
     valuesRef.current = nextValues;
     errorsRef.current = {};
     touchedRef.current = {};
@@ -152,7 +162,7 @@ export const FormGenerator = forwardRef(function FormGenerator(props, ref) {
     setValues(nextValues);
     setErrors({});
     setTab(0);
-  }, [schemaKey, normalized]);
+  }, [structureKey, normalized]);
 
   const appearance = styles || {};
   const classNames = { ...classNamesProp, ...appearance.classNames };
@@ -298,9 +308,18 @@ export const FormGenerator = forwardRef(function FormGenerator(props, ref) {
     },
   }));
 
-  const showButton = button !== false && (button || onSubmit || normalized.submitLabel);
+  const schemaButton =
+    normalized.button && typeof normalized.button === 'object' ? normalized.button : {};
+  const showButton =
+    button !== false && (button || onSubmit || normalized.submitLabel || schemaButton.label);
   const buttonConfig = button && typeof button === 'object' ? button : {};
   const buttonLook = appearance.button || {};
+  const submitAlign = ['left', 'center', 'right'].includes(buttonConfig.align || schemaButton.align)
+    ? buttonConfig.align || schemaButton.align
+    : 'left';
+  const submitWide = Boolean(
+    buttonConfig.fullWidth ?? schemaButton.fullWidth ?? buttonLook.fullWidth,
+  );
 
   const gridProps = {
     values,
@@ -381,18 +400,22 @@ export const FormGenerator = forwardRef(function FormGenerator(props, ref) {
       ) : null}
       {body}
       {showButton ? (
-        <div className={cx('generaptor-actions', classNames.actions)}>
+        <div
+          className={cx('generaptor-actions', classNames.actions)}
+          data-align={submitAlign}
+          data-wide={submitWide ? 'true' : 'false'}
+        >
           <Button
             type="submit"
             variant={buttonConfig.variant || buttonLook.variant || 'contained'}
             color={buttonConfig.color || buttonLook.color || 'primary'}
             size={buttonConfig.size || appearance.field?.size || 'medium'}
-            fullWidth={buttonConfig.fullWidth ?? buttonLook.fullWidth}
+            fullWidth={submitWide}
             disableElevation={buttonConfig.disableElevation ?? buttonLook.disableElevation}
             className={cx(classNames.submit)}
             sx={[buttonLook.sx, buttonConfig.sx]}
           >
-            {buttonConfig.label || normalized.submitLabel || 'Submit'}
+            {buttonConfig.label || schemaButton.label || normalized.submitLabel || 'Submit'}
           </Button>
         </div>
       ) : null}

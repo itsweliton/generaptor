@@ -440,8 +440,41 @@ pre {
 
 .builder-page-head {
   display: grid;
-  grid-template-columns: minmax(0, 1.4fr) 92px minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) 92px;
   gap: 10px;
+}
+
+.builder-submit {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 10px;
+  align-items: end;
+}
+
+.builder-align {
+  display: flex;
+  height: 36px;
+  overflow: hidden;
+  border: 1px solid var(--page-line);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.builder-align button {
+  border: 0;
+  background: transparent;
+  color: var(--page-ink);
+  padding: 0 12px;
+  cursor: pointer;
+}
+
+.builder-align button.is-active {
+  background: var(--page-ink);
+  color: #f6f1e8;
+}
+
+.builder-submit-preview {
+  margin-top: 4px;
 }
 
 .builder-page-head label,
@@ -633,6 +666,82 @@ pre {
   align-self: flex-start;
 }
 
+.builder-formid {
+  margin: 0;
+  color: var(--page-muted);
+  font-size: 0.78rem;
+}
+
+.builder-formid code {
+  font-family: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.builder-group {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border: 1px dashed var(--page-line);
+  border-radius: 16px;
+  background: rgba(255, 252, 248, 0.4);
+}
+
+.builder-group.is-selected {
+  border-style: solid;
+  border-color: var(--page-fern);
+}
+
+.builder-group-title {
+  margin: 0;
+  font-size: 1.35rem;
+}
+
+.builder-group-description {
+  grid-column: 1 / -1;
+}
+
+.builder-group-empty {
+  margin: 0;
+  color: var(--page-muted);
+}
+
+.builder-switch {
+  display: flex;
+  gap: 6px;
+}
+
+.builder-switch button.is-active {
+  background: #f6f1e8;
+  color: #1d1914;
+  border-color: transparent;
+}
+
+.builder-json.is-form {
+  background: var(--page-card);
+  color: var(--page-ink);
+}
+
+.builder-json.is-form .builder-switch button {
+  color: var(--page-ink);
+  background: transparent;
+  border-color: var(--page-line);
+}
+
+.builder-json.is-form .builder-switch button.is-active {
+  background: var(--page-ink);
+  color: #f6f1e8;
+  border-color: transparent;
+}
+
+.builder-preview-values {
+  margin-top: 14px;
+  padding: 12px;
+  border-radius: 12px;
+  background: #1d1914;
+  color: #f6f1e8;
+}
+
 .builder-json {
   position: sticky;
   top: 16px;
@@ -682,6 +791,7 @@ pre {
   .lab-code,
   .lab-controls,
   .builder-page-head,
+  .builder-submit,
   .block-settings,
   .block-validation {
     grid-template-columns: 1fr;

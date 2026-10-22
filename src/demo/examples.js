@@ -114,8 +114,8 @@ const masks = {
       required: true,
       helperText: 'Brazil, with area code',
     },
-    { name: 'cpf', type: 'cpf', label: 'CPF', required: true },
-    { name: 'cep', type: 'cep', label: 'CEP', required: true },
+    { name: 'ssn', type: 'ssn', label: 'Social Security number', required: true },
+    { name: 'postal', type: 'postal', label: 'Postal code', required: true },
     {
       name: 'amount',
       type: 'currency',
@@ -386,7 +386,8 @@ export const examples = [
     id: 'masks',
     kicker: 'Input',
     title: 'Masks',
-    summary: 'Phone, CPF, CEP, currency, and a custom pattern. Submit receives the raw value too.',
+    summary:
+      'Phone, Social Security number, postal code, currency, and a custom pattern. Submit receives the raw value too.',
     submitLabel: 'Save details',
     schema: masks,
   },

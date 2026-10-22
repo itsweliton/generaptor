@@ -1,4 +1,4 @@
-const NAMED_MASKS = new Set(['phone', 'cep', 'cpf', 'currency']);
+const NAMED_MASKS = new Set(['phone', 'cep', 'cpf', 'ssn', 'postal', 'currency']);
 
 export function digits(value) {
   return String(value ?? '').replace(/\D/g, '');
@@ -17,6 +17,19 @@ export function formatPhone(value) {
 
 export function formatCep(value) {
   const numbers = digits(value).slice(0, 8);
+  if (numbers.length <= 5) return numbers;
+  return `${numbers.slice(0, 5)}-${numbers.slice(5)}`;
+}
+
+export function formatSsn(value) {
+  const numbers = digits(value).slice(0, 9);
+  if (numbers.length <= 3) return numbers;
+  if (numbers.length <= 5) return `${numbers.slice(0, 3)}-${numbers.slice(3)}`;
+  return `${numbers.slice(0, 3)}-${numbers.slice(3, 5)}-${numbers.slice(5)}`;
+}
+
+export function formatPostal(value) {
+  const numbers = digits(value).slice(0, 9);
   if (numbers.length <= 5) return numbers;
   return `${numbers.slice(0, 5)}-${numbers.slice(5)}`;
 }
@@ -85,6 +98,8 @@ const FORMATTERS = {
   phone: formatPhone,
   cep: formatCep,
   cpf: formatCpf,
+  ssn: formatSsn,
+  postal: formatPostal,
   currency: formatCurrency,
 };
 

@@ -27,7 +27,9 @@ export function isEmpty(value, field) {
 }
 
 function lengthOf(field, value) {
-  if (field.mask || ['phone', 'cep', 'cpf'].includes(field.type)) return digits(value).length;
+  if (field.mask || ['phone', 'cep', 'cpf', 'ssn', 'postal'].includes(field.type)) {
+    return digits(value).length;
+  }
   return String(value ?? '').length;
 }
 
@@ -158,6 +160,29 @@ const VALIDATORS = {
   cep(value, config, field) {
     if (isEmpty(value, field)) return '';
     if (digits(value).length !== 8) return textOf(config, 'Enter a valid CEP');
+    return '';
+  },
+  ssn(value, config, field) {
+    if (isEmpty(value, field)) return '';
+    const number = digits(value);
+    const area = number.slice(0, 3);
+    const group = number.slice(3, 5);
+    const serial = number.slice(5);
+    const valid =
+      number.length === 9 &&
+      !/^(\d)\1+$/.test(number) &&
+      area !== '000' &&
+      area !== '666' &&
+      !area.startsWith('9') &&
+      group !== '00' &&
+      serial !== '0000';
+    if (!valid) return textOf(config, 'Enter a valid Social Security number');
+    return '';
+  },
+  postal(value, config, field) {
+    if (isEmpty(value, field)) return '';
+    const length = digits(value).length;
+    if (length !== 5 && length !== 9) return textOf(config, 'Enter a valid postal code');
     return '';
   },
   currency(value, config, field) {

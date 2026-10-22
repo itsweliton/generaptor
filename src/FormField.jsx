@@ -32,6 +32,8 @@ const TEXT_TYPES = new Set([
   'phone',
   'cep',
   'cpf',
+  'ssn',
+  'postal',
   'currency',
 ]);
 
@@ -41,6 +43,8 @@ function htmlType(type) {
     type === 'phone' ||
     type === 'cep' ||
     type === 'cpf' ||
+    type === 'ssn' ||
+    type === 'postal' ||
     type === 'currency'
   ) {
     return 'text';
@@ -49,7 +53,9 @@ function htmlType(type) {
 }
 
 function inputMode(type) {
-  if (type === 'phone' || type === 'cep' || type === 'cpf') return 'numeric';
+  if (type === 'phone' || type === 'cep' || type === 'cpf' || type === 'ssn' || type === 'postal') {
+    return 'numeric';
+  }
   if (type === 'currency' || type === 'number') return 'decimal';
   if (type === 'email') return 'email';
   if (type === 'tel') return 'tel';

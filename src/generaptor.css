@@ -54,7 +54,19 @@
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
-  justify-content: var(--gr-actions-align, flex-start);
+  justify-content: flex-start;
+}
+
+.generaptor-actions[data-align='center'] {
+  justify-content: center;
+}
+
+.generaptor-actions[data-align='right'] {
+  justify-content: flex-end;
+}
+
+.generaptor-actions[data-wide='true'] > .MuiButton-root {
+  flex: 1 1 100%;
 }
 
 .generaptor-file {
