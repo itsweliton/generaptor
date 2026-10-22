@@ -94,7 +94,7 @@ function Mast({ preset, onChoose }) {
 }
 
 export default function App() {
-  const [exampleId, setExampleId] = useState(examples[0].id);
+  const [exampleId, setExampleId] = useState('builder');
   const [preset, setPreset] = useState('paper');
   const [overrides, setOverrides] = useState({});
   const [live, setLive] = useState(null);
@@ -156,16 +156,16 @@ export default function App() {
       <div className="layout">
         <div className="rail">
           <Mast preset={preset} onChoose={choosePreset} />
-          <nav className="example-nav" aria-label="Examples">
+          <nav className="example-nav" aria-label="Pages">
             <button
               type="button"
               className={building ? 'is-active' : undefined}
               aria-current={building ? 'page' : undefined}
               onClick={() => openExample('builder')}
             >
-              <span>00</span>
               Builder
             </button>
+            <p className="eyebrow example-nav-heading">Examples</p>
             {examples.map((item, index) => (
               <button
                 key={item.id}

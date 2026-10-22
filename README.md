@@ -144,15 +144,15 @@ Built in: `required`, `minLength`, `maxLength`, `min`, `max`, `email`, `url`, `t
 
 ## Masks
 
-| Mask     | Type              | What you see      | `raw` on submit                   |
-| -------- | ----------------- | ----------------- | --------------------------------- |
-| Phone    | `phone`           | `(11) 98765-4321` | digits                            |
-| Social Security number | `ssn`    | `123-45-6789`     | 9 digits                          |
-| Postal code            | `postal` | `94107` or `94107-1234` | 5 or 9 digits               |
-| CEP (legacy)           | `cep`    | `01310-100`       | 8 digits                          |
-| CPF (legacy)           | `cpf`    | `529.982.247-25`  | 11 digits                         |
-| Currency | `currency`        | `R$ 10,00`        | number, last two digits are cents |
-| Pattern  | `mask: 'AA-####'` | `AB-1234`         | letters and digits                |
+| Mask                   | Type              | What you see            | `raw` on submit                   |
+| ---------------------- | ----------------- | ----------------------- | --------------------------------- |
+| Phone                  | `phone`           | `(11) 98765-4321`       | digits                            |
+| Social Security number | `ssn`             | `123-45-6789`           | 9 digits                          |
+| Postal code            | `postal`          | `94107` or `94107-1234` | 5 or 9 digits                     |
+| CEP (legacy)           | `cep`             | `01310-100`             | 8 digits                          |
+| CPF (legacy)           | `cpf`             | `529.982.247-25`        | 11 digits                         |
+| Currency               | `currency`        | `R$ 10,00`              | number, last two digits are cents |
+| Pattern                | `mask: 'AA-####'` | `AB-1234`               | letters and digits                |
 
 `#` is a digit and `A` is a letter. Currency uses `locale` and `currency` (`pt-BR` / `BRL` by default). You can also pass `mask` as a function.
 
@@ -277,7 +277,7 @@ Hooks you can target: `.generaptor`, `.generaptor-field`, `.generaptor-group`, `
 
 ## Builder
 
-The first item in the examples nav is the builder. Add a block for any field the library renders: text, email, URL, password, number, long text, select, radio, checkbox, switch, date, time, date and time, phone, Social Security number, postal code, currency, and upload. Add a group or a tab when the form should be split into sections. Groups stack like the Groups example, and tabs render like the Tabs example. The Sections setting switches between the two. Fields outside any section go into a "General" tab.
+The examples site opens on the builder. The other pages are listed under Examples in the nav. Add a block for any field the library renders: text, email, URL, password, number, long text, select, radio, checkbox, switch, date, time, date and time, phone, Social Security number, postal code, currency, and upload. Add a group or a tab when the form should be split into sections. Groups stack like the Groups example, and tabs render like the Tabs example. The Sections setting switches between the two. Fields outside any section go into a "General" tab.
 
 Click a block to edit it. The settings are split into sections:
 
