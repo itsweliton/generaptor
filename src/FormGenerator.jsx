@@ -117,7 +117,7 @@ export const FormGenerator = forwardRef(function FormGenerator(props, ref) {
   const onClick = props.onClick || options.onClick || button?.onClick;
   const onInvalid = props.onInvalid || options.onInvalid;
   const verifyValidation = props.verifyValidation || options.verifyValidation;
-  const validateOn = props.validateOn || options.validateOn || 'blur';
+  const validateOnProp = props.validateOn || options.validateOn;
   const themeProp = props.theme === undefined ? options.theme : props.theme;
   const styles = props.styles || options.styles;
   const className = props.className || options.className;
@@ -127,6 +127,7 @@ export const FormGenerator = forwardRef(function FormGenerator(props, ref) {
   const id = props.id || options.id;
 
   const normalized = useMemo(() => normalizeSchema(schemaProp), [schemaProp]);
+  const validateOn = validateOnProp || normalized.validateOn || 'blur';
   const initialValues = useMemo(() => buildValues(normalized.fields), [normalized]);
   const structureKey = normalized.fields.map((field) => `${field.name}:${field.type}`).join('|');
   const [values, setValues] = useState(initialValues);

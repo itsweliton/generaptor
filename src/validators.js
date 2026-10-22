@@ -197,6 +197,30 @@ const VALIDATORS = {
     }
     return '';
   },
+  url(value, config, field) {
+    if (isEmpty(value, field)) return '';
+    let parsed = null;
+    try {
+      parsed = new URL(String(value).trim());
+    } catch {
+      parsed = null;
+    }
+    if (parsed && (parsed.protocol === 'http:' || parsed.protocol === 'https:')) return '';
+    return textOf(config, 'Enter a valid URL');
+  },
+  pattern(value, config, field) {
+    if (isEmpty(value, field)) return '';
+    const source = config instanceof RegExp ? config : (config.value ?? config.pattern);
+    if (!source) return '';
+    let expression;
+    try {
+      expression = source instanceof RegExp ? source : new RegExp(String(source));
+    } catch {
+      return '';
+    }
+    if (!expression.test(String(value))) return textOf(config, 'Use the expected format');
+    return '';
+  },
   date(value, config, field) {
     if (isEmpty(value, field)) return '';
     const date = value instanceof Date ? value : new Date(value);

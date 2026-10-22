@@ -103,7 +103,9 @@ const schema = {
 
 Older field names still resolve: `type: 'input'` with `inputType`, `type: 'hour'`, and `type: 'upload'`.
 
-A field accepts `helperText`, `placeholder`, `disabled`, `readOnly`, `autoComplete`, `sx`, `className`, `variant`, and `size`.
+A field accepts `helperText`, `placeholder`, `defaultValue`, `disabled`, `readOnly`, `autoComplete`, `sx`, `className`, `variant`, and `size`. When a text field has a placeholder, its label sits above the input so the placeholder is visible before focus. Checkboxes and switches take `labelPlacement`. Uploads take `buttonLabel`, `acceptMessage`, and `maxSizeMessage`.
+
+`schema.button` sets the submit button from the schema: `{ label, fullWidth, align }`, where `align` is `left`, `center`, or `right`.
 
 ## Validation
 
@@ -121,9 +123,11 @@ Validators run on blur, then again as the field changes. Submit validates everyt
 }
 ```
 
-Built in: `required`, `minLength`, `maxLength`, `min`, `max`, `email`, `telephone`, `ssn`, `postal`, `currency`, `date`, and `custom`.
+Built in: `required`, `minLength`, `maxLength`, `min`, `max`, `email`, `url`, `telephone`, `ssn`, `postal`, `currency`, `date`, `pattern`, and `custom`.
 
-`type: 'email' | 'phone' | 'ssn' | 'postal' | 'currency' | 'date'` turns the matching check on for you. Pass `validators: { ssn: false }` to opt out. A string or `{ message }` replaces the default error. `minLength` and `maxLength` accept a number or `{ value, message }`. `verifyValidation(valid, errors, values)` runs after each check. A ref can call `validate()`, `getValues()`, `getRawValues()`, and `reset()`.
+`pattern` takes a regular expression or `{ value, message }`, where `value` is the expression as a string. A field can also set `pattern` and `patternMessage` directly. `validateOn` can be set on the schema too, and the prop wins when both are set.
+
+`type: 'email' | 'url' | 'phone' | 'ssn' | 'postal' | 'currency' | 'date'` turns the matching check on for you. Pass `validators: { ssn: false }` to opt out. A string or `{ message }` replaces the default error. `minLength` and `maxLength` accept a number or `{ value, message }`. `verifyValidation(valid, errors, values)` runs after each check. A ref can call `validate()`, `getValues()`, `getRawValues()`, and `reset()`.
 
 ```jsx
 <FormGenerator
@@ -273,7 +277,17 @@ Hooks you can target: `.generaptor`, `.generaptor-field`, `.generaptor-group`, `
 
 ## Builder
 
-The first item in the examples nav is the builder. Add a block for any field the library renders: text, email, password, number, long text, select, radio, checkbox, switch, date, time, date and time, phone, Social Security number, postal code, currency, and upload. Add a group when the form should be split into sections, the same layout as the Groups example. Click a block to edit its label, name, placeholder, helper text, options, width, and which group it belongs to.
+The first item in the examples nav is the builder. Add a block for any field the library renders: text, email, URL, password, number, long text, select, radio, checkbox, switch, date, time, date and time, phone, Social Security number, postal code, currency, and upload. Add a group or a tab when the form should be split into sections. Groups stack like the Groups example, and tabs render like the Tabs example. The Sections setting switches between the two. Fields outside any section go into a "General" tab.
+
+Click a block to edit it. The settings are split into sections:
+
+- Field: section, label, name, placeholder, helper text, default value, and options (each option can be turned off)
+- Validation: see below
+- Behavior: disabled, read only, and a "Show when" rule that writes `showIf` (equal or not equal to another field's value)
+- Input: mask, number step, autocomplete, date display format, rows, currency and locale, file types, button text, multiple files, and label position for checkboxes and switches
+- Appearance: width in a two-column form, variant, and size
+
+Copy duplicates a block with a new name. Drag a block onto another block or into an empty section to move it. The page also has a description and a "Check fields" setting that writes `validateOn`.
 
 Every form gets a `formId`. Clearing the page starts a new form and a new id. The id is stored with the draft and written on the schema as `formId`.
 
@@ -288,7 +302,8 @@ Validation on a block is written into the schema:
 - min and max for numbers, with optional messages
 - the format check for email, phone, Social Security number, postal code, currency, and date, which you can turn off or give a message
 - min and max amount for currency
-- max file size in megabytes
+- max file size in megabytes, and messages for size and file type
+- a regular expression pattern, with an optional message
 
 Copy or download the schema from that panel. The draft, including groups, validation, and `formId`, stays in `localStorage` under `generaptor.builder`, so leaving the builder or reloading the page keeps the form.
 

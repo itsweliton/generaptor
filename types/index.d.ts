@@ -60,6 +60,13 @@ export interface Field {
   format?: string;
   options?: FieldOption[];
   validators?: Record<string, boolean | number | ValidatorConfig | ValidatorConfig['validate']>;
+  pattern?: string | RegExp;
+  patternMessage?: string;
+  autoComplete?: string;
+  buttonLabel?: string;
+  labelPlacement?: 'end' | 'start' | 'top' | 'bottom';
+  acceptMessage?: string;
+  maxSizeMessage?: string;
   showIf?: ShowIf | ((values: Values) => boolean);
   visible?: (values: Values) => boolean;
   hidden?: boolean;
@@ -101,6 +108,7 @@ export interface Schema {
   columns?: number;
   submitLabel?: string;
   button?: { label?: string; fullWidth?: boolean; align?: 'left' | 'center' | 'right' };
+  validateOn?: 'blur' | 'change' | 'submit';
   locale?: unknown;
   fields?: Field[];
   groups?: FieldGroup[];

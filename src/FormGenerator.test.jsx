@@ -302,6 +302,44 @@ describe('FormGenerator', () => {
     expect(screen.getByPlaceholderText('Lisbon')).toBeInTheDocument();
   });
 
+  it('checks a pattern and a URL from the schema', async () => {
+    const onSubmit = vi.fn();
+    const { user } = setup(
+      <FormGenerator
+        schema={{
+          validateOn: 'change',
+          fields: [
+            {
+              name: 'code',
+              label: 'Code',
+              validators: {
+                pattern: { value: '^[A-Z]{2}\\d{2}$', message: 'Two letters, two digits' },
+              },
+            },
+            { name: 'site', type: 'url', label: 'Site' },
+          ],
+        }}
+        button={{ label: 'Check' }}
+        onSubmit={onSubmit}
+      />,
+    );
+
+    await user.type(screen.getByRole('textbox', { name: 'Code' }), 'a1');
+    expect(screen.getByText('Two letters, two digits')).toBeInTheDocument();
+    await user.type(screen.getByRole('textbox', { name: 'Site' }), 'nope');
+    expect(screen.getByText('Enter a valid URL')).toBeInTheDocument();
+
+    await user.clear(screen.getByRole('textbox', { name: 'Code' }));
+    await user.type(screen.getByRole('textbox', { name: 'Code' }), 'AB12');
+    await user.clear(screen.getByRole('textbox', { name: 'Site' }));
+    await user.type(screen.getByRole('textbox', { name: 'Site' }), 'https://example.com');
+    await user.click(screen.getByRole('button', { name: 'Check' }));
+    expect(onSubmit).toHaveBeenCalledWith(
+      { code: 'AB12', site: 'https://example.com' },
+      expect.anything(),
+    );
+  });
+
   it('keeps the factory API', () => {
     const element = new Generaptor().create(
       { fields: [{ name: 'city', label: 'City' }] },

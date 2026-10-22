@@ -117,6 +117,7 @@ function TextInput({ field, value, error, onChange, onBlur, appearance, classNam
           'aria-invalid': error ? true : undefined,
           ...field.inputProps,
         },
+        inputLabel: field.placeholder ? { shrink: true } : undefined,
         ...field.slotProps,
       }}
     />

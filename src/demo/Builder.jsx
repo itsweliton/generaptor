@@ -2,11 +2,13 @@ import { useEffect, useMemo, useState } from 'react';
 import Button from '@mui/material/Button';
 import { ThemeProvider } from '@mui/material/styles';
 import { FormGenerator } from '../FormGenerator';
+import { applyMask } from '../masks';
 import { present } from './widgets';
 
 const BLOCKS = [
   { type: 'text', label: 'Text', defaultLabel: 'Text' },
   { type: 'email', label: 'Email', defaultLabel: 'Email' },
+  { type: 'url', label: 'URL', defaultLabel: 'Website' },
   { type: 'password', label: 'Password', defaultLabel: 'Password' },
   { type: 'number', label: 'Number', defaultLabel: 'Number' },
   { type: 'textarea', label: 'Long text', defaultLabel: 'Message' },
@@ -27,6 +29,7 @@ const BLOCKS = [
 const TEXT_TYPES = new Set([
   'text',
   'email',
+  'url',
   'password',
   'number',
   'textarea',
@@ -36,9 +39,40 @@ const TEXT_TYPES = new Set([
   'currency',
 ]);
 const FIELD_TYPES = new Set(BLOCKS.map((block) => block.type));
-const LENGTH_TYPES = new Set(['text', 'password', 'textarea', 'email', 'phone', 'ssn', 'postal']);
+const LENGTH_TYPES = new Set([
+  'text',
+  'password',
+  'textarea',
+  'email',
+  'url',
+  'phone',
+  'ssn',
+  'postal',
+]);
+const PATTERN_TYPES = new Set(['text', 'password', 'textarea', 'email', 'url']);
+const DATE_TYPES = new Set(['date', 'time', 'datetime']);
+const CHOICE_TYPES = new Set(['select', 'radio']);
+const TOGGLE_TYPES = new Set(['checkbox', 'switch']);
+const AUTOCOMPLETE = [
+  'off',
+  'name',
+  'given-name',
+  'family-name',
+  'email',
+  'username',
+  'new-password',
+  'current-password',
+  'tel',
+  'street-address',
+  'postal-code',
+  'country-name',
+  'organization',
+  'url',
+  'bday',
+];
 const FORMAT_CHECKS = {
   email: { key: 'email', label: 'Check email', placeholder: 'Enter a valid email' },
+  url: { key: 'url', label: 'Check URL', placeholder: 'Enter a valid URL' },
   phone: { key: 'telephone', label: 'Check phone', placeholder: 'Enter a valid phone number' },
   ssn: {
     key: 'ssn',
@@ -53,6 +87,17 @@ const FORMAT_CHECKS = {
 };
 const STORAGE_KEY = 'generaptor.builder';
 const SUBMIT_ALIGNS = ['left', 'center', 'right'];
+const VALIDATE_ON = ['blur', 'change', 'submit'];
+const EMPTY_PAGE = {
+  title: '',
+  description: '',
+  columns: 1,
+  layout: 'groups',
+  validateOn: 'blur',
+  submitLabel: '',
+  submitWide: false,
+  submitAlign: 'left',
+};
 
 function optionalNumber(value) {
   if (value === '' || value == null) return undefined;
@@ -110,11 +155,33 @@ function readField(field) {
     currency: field.currency ? String(field.currency) : undefined,
     locale: field.locale ? String(field.locale) : undefined,
     accept: field.accept ? String(field.accept) : undefined,
+    acceptMessage: storedText(field.acceptMessage),
+    maxSizeMessage: storedText(field.maxSizeMessage),
+    buttonLabel: storedText(field.buttonLabel),
     multiple: Boolean(field.multiple) || undefined,
+    defaultValue:
+      typeof field.defaultValue === 'boolean' || typeof field.defaultValue === 'string'
+        ? field.defaultValue
+        : undefined,
+    disabled: Boolean(field.disabled) || undefined,
+    readOnly: Boolean(field.readOnly) || undefined,
+    pattern: storedText(field.pattern),
+    patternMessage: storedText(field.patternMessage),
+    mask: storedText(field.mask),
+    step: storedText(field.step),
+    autoComplete: storedText(field.autoComplete),
+    format: storedText(field.format),
+    labelPlacement: storedText(field.labelPlacement),
+    variant: storedText(field.variant),
+    size: storedText(field.size),
+    showField: storedText(field.showField),
+    showOp: field.showOp === 'notEquals' ? 'notEquals' : 'equals',
+    showValue: field.showValue == null ? '' : String(field.showValue),
     options: Array.isArray(field.options)
       ? field.options.map((option) => ({
           value: option?.value ?? '',
           label: String(option?.label ?? ''),
+          disabled: Boolean(option?.disabled) || undefined,
         }))
       : undefined,
   };
@@ -161,7 +228,10 @@ function readBuilder() {
       blocks,
       page: {
         title: String(data.page?.title || ''),
+        description: String(data.page?.description || ''),
         columns: Number(data.page?.columns) === 2 ? 2 : 1,
+        layout: data.page?.layout === 'tabs' ? 'tabs' : 'groups',
+        validateOn: VALIDATE_ON.includes(data.page?.validateOn) ? data.page.validateOn : 'blur',
         submitLabel: String(data.page?.submitLabel || ''),
         submitWide: Boolean(data.page?.submitWide),
         submitAlign: SUBMIT_ALIGNS.includes(data.page?.submitAlign)
@@ -228,7 +298,48 @@ function optionValue(option, index) {
   return slugName(option.label) || `option${index + 1}`;
 }
 
-function exportField(field) {
+function choiceValue(field, raw) {
+  const options = field.options || [];
+  const index = options.findIndex(
+    (option, position) => String(optionValue(option, position)) === String(raw),
+  );
+  return index < 0 ? undefined : optionValue(options[index], index);
+}
+
+function typedValue(field, raw) {
+  if (TOGGLE_TYPES.has(field.type)) return raw === true || raw === 'true';
+  if (raw == null || raw === '') return undefined;
+  if (CHOICE_TYPES.has(field.type)) return choiceValue(field, raw);
+  if (field.type === 'number') return optionalNumber(raw);
+  return String(raw);
+}
+
+function exportDefault(field, exported) {
+  if (field.defaultValue == null || field.defaultValue === '') return;
+  if (TOGGLE_TYPES.has(field.type)) {
+    if (field.defaultValue === true) exported.defaultValue = true;
+    return;
+  }
+  if (CHOICE_TYPES.has(field.type)) {
+    const value = choiceValue(field, field.defaultValue);
+    if (value !== undefined) exported.defaultValue = value;
+    return;
+  }
+  if (TEXT_TYPES.has(field.type)) {
+    exported.defaultValue = applyMask(exported, String(field.defaultValue));
+  }
+}
+
+function exportShowIf(field, fields) {
+  if (!field.showField) return;
+  const target = fields.find((item) => item.id === field.showField && item.id !== field.id);
+  if (!target) return;
+  const value = typedValue(target, field.showValue);
+  if (value === undefined) return;
+  return { field: target.name, [field.showOp === 'notEquals' ? 'notEquals' : 'equals']: value };
+}
+
+function exportField(field, fields = []) {
   const exported = {
     name: field.name || slugName(field.label),
     type: field.type,
@@ -238,6 +349,21 @@ function exportField(field) {
   if (field.helperText) exported.helperText = field.helperText;
   if (field.required) exported.required = storedText(field.requiredMessage) || true;
   if (field.columnSpan > 1) exported.columnSpan = field.columnSpan;
+  if (field.disabled) exported.disabled = true;
+  if (field.readOnly && TEXT_TYPES.has(field.type)) exported.readOnly = true;
+  if (field.variant) exported.variant = field.variant;
+  if (field.size) exported.size = field.size;
+  if (field.autoComplete && TEXT_TYPES.has(field.type)) exported.autoComplete = field.autoComplete;
+  if (field.mask && field.type === 'text') exported.mask = field.mask;
+  if (field.type === 'number' && storedText(field.step)) {
+    exported.step = optionalNumber(field.step) ?? field.step;
+  }
+  if (DATE_TYPES.has(field.type) && field.format) exported.format = field.format;
+  if (TOGGLE_TYPES.has(field.type) && field.labelPlacement && field.labelPlacement !== 'end') {
+    exported.labelPlacement = field.labelPlacement;
+  }
+  const showIf = exportShowIf(field, fields);
+  if (showIf) exported.showIf = showIf;
   const minLength = optionalNumber(field.minLength);
   const maxLength = optionalNumber(field.maxLength);
   if (minLength != null) {
@@ -258,22 +384,37 @@ function exportField(field) {
   if (field.type === 'select' || field.type === 'radio') {
     exported.options = (field.options || [])
       .filter((option) => option.label || option.value)
-      .map((option, index) => ({
-        value: optionValue(option, index),
-        label: option.label || String(optionValue(option, index)),
-      }));
+      .map((option, index) => {
+        const item = {
+          value: optionValue(option, index),
+          label: option.label || String(optionValue(option, index)),
+        };
+        if (option.disabled) item.disabled = true;
+        return item;
+      });
   }
+  exportDefault(field, exported);
   if (field.type === 'currency') {
     exported.currency = field.currency || 'BRL';
     exported.locale = field.locale || 'pt-BR';
   }
   if (field.type === 'file') {
     if (field.accept) exported.accept = field.accept;
+    if (field.accept && field.acceptMessage) exported.acceptMessage = field.acceptMessage;
     if (field.multiple) exported.multiple = true;
+    if (field.buttonLabel) exported.buttonLabel = field.buttonLabel;
     const maxSizeMb = optionalNumber(field.maxSizeMb);
-    if (maxSizeMb != null && maxSizeMb > 0) exported.maxSize = Math.round(maxSizeMb * 1_000_000);
+    if (maxSizeMb != null && maxSizeMb > 0) {
+      exported.maxSize = Math.round(maxSizeMb * 1_000_000);
+      if (field.maxSizeMessage) exported.maxSizeMessage = field.maxSizeMessage;
+    }
   }
   const validators = {};
+  if (PATTERN_TYPES.has(field.type) && field.pattern) {
+    validators.pattern = storedText(field.patternMessage)
+      ? { value: field.pattern, message: storedText(field.patternMessage) }
+      : { value: field.pattern };
+  }
   const format = FORMAT_CHECKS[field.type];
   if (format) {
     if (field.formatCheck === false) validators[format.key] = false;
@@ -303,7 +444,7 @@ function exportField(field) {
   return exported;
 }
 
-function exportGroup(group, usedIds) {
+function exportGroup(group, usedIds, fields) {
   const base = slugName(group.label);
   const id = uniqueName(
     usedIds.map((name) => ({ name })),
@@ -313,7 +454,7 @@ function exportGroup(group, usedIds) {
   const exported = {
     id,
     label: group.label || '',
-    fields: group.fields.map(exportField),
+    fields: group.fields.map((field) => exportField(field, fields)),
   };
   if (storedText(group.description)) exported.description = storedText(group.description);
   if (group.columns > 1) exported.columns = group.columns;
@@ -323,37 +464,47 @@ function exportGroup(group, usedIds) {
 export function exportSchema(blocks, page, formId) {
   const schema = { formId };
   if (page.title.trim()) schema.title = page.title.trim();
+  if (storedText(page.description)) schema.description = storedText(page.description);
   if (page.columns > 1) schema.columns = page.columns;
+  if (page.validateOn && page.validateOn !== 'blur') schema.validateOn = page.validateOn;
   if (page.submitLabel.trim()) schema.submitLabel = page.submitLabel.trim();
   const button = {};
   if (page.submitWide) button.fullWidth = true;
   if (page.submitAlign && page.submitAlign !== 'left') button.align = page.submitAlign;
   if (Object.keys(button).length) schema.button = button;
 
+  const fields = fieldsIn(blocks);
   const hasGroups = blocks.some((block) => block.kind === 'group');
   if (!hasGroups) {
-    schema.fields = blocks.filter((block) => block.kind === 'field').map(exportField);
+    schema.fields = blocks.map((field) => exportField(field, fields));
     return schema;
   }
 
+  const tabs = page.layout === 'tabs';
   const groups = [];
   const usedIds = [];
   let loose = [];
   const flush = () => {
     if (!loose.length) return;
-    groups.push(exportGroup({ label: '', description: '', columns: 1, fields: loose }, usedIds));
+    groups.push(
+      exportGroup(
+        { label: tabs ? 'General' : '', description: '', columns: 1, fields: loose },
+        usedIds,
+        fields,
+      ),
+    );
     loose = [];
   };
   blocks.forEach((block) => {
     if (block.kind === 'group') {
       flush();
-      groups.push(exportGroup(block, usedIds));
+      groups.push(exportGroup(block, usedIds, fields));
       return;
     }
     loose.push(block);
   });
   flush();
-  schema.layout = 'groups';
+  schema.layout = tabs ? 'tabs' : 'groups';
   schema.groups = groups;
   return schema;
 }
@@ -386,7 +537,7 @@ function BlockPreview({ field, appearance }) {
   );
 }
 
-function SubmitButton({ page, appearance, type = 'button' }) {
+function SubmitButton({ page, appearance }) {
   const label = page.submitLabel.trim() || 'Submit';
   const align = SUBMIT_ALIGNS.includes(page.submitAlign) ? page.submitAlign : 'left';
   const button = (
@@ -396,12 +547,12 @@ function SubmitButton({ page, appearance, type = 'button' }) {
       data-wide={page.submitWide ? 'true' : 'false'}
     >
       <Button
-        type={type}
+        type="button"
         variant={appearance?.styles?.button?.variant || 'contained'}
         color={appearance?.styles?.button?.color || 'primary'}
         fullWidth={Boolean(page.submitWide)}
         disableElevation={appearance?.styles?.button?.disableElevation !== false}
-        tabIndex={type === 'button' ? -1 : undefined}
+        tabIndex={-1}
         sx={appearance?.styles?.button?.sx}
       >
         {label}
@@ -412,53 +563,267 @@ function SubmitButton({ page, appearance, type = 'button' }) {
   return <ThemeProvider theme={appearance.theme}>{button}</ThemeProvider>;
 }
 
-function Inspector({ field, columns, groups, groupId, onChange, onPlace }) {
+function Section({ title, open = false, children }) {
+  return (
+    <details className="block-section" open={open}>
+      <summary>{title}</summary>
+      <div className="block-section-body">{children}</div>
+    </details>
+  );
+}
+
+function DefaultValue({ field, onPatch }) {
+  if (TOGGLE_TYPES.has(field.type)) {
+    return (
+      <label className="block-check">
+        <input
+          type="checkbox"
+          checked={field.defaultValue === true}
+          onChange={(event) => onPatch({ defaultValue: event.target.checked || undefined })}
+        />
+        On by default
+      </label>
+    );
+  }
+  if (CHOICE_TYPES.has(field.type)) {
+    return (
+      <label>
+        Default option
+        <select
+          value={field.defaultValue ?? ''}
+          onChange={(event) => onPatch({ defaultValue: event.target.value || undefined })}
+        >
+          <option value="">None</option>
+          {(field.options || []).map((option, index) => (
+            <option key={`${field.id}-default-${index}`} value={String(optionValue(option, index))}>
+              {option.label || String(optionValue(option, index))}
+            </option>
+          ))}
+        </select>
+      </label>
+    );
+  }
+  if (!TEXT_TYPES.has(field.type)) return null;
+  return (
+    <label>
+      Default value
+      <input
+        type={field.type === 'number' ? 'number' : 'text'}
+        value={field.defaultValue ?? ''}
+        onChange={(event) => onPatch({ defaultValue: event.target.value })}
+      />
+    </label>
+  );
+}
+
+function ShowWhen({ field, fields, onPatch }) {
+  const others = fields.filter((item) => item.id !== field.id);
+  const target = others.find((item) => item.id === field.showField);
+  let valueInput = null;
+  if (target && TOGGLE_TYPES.has(target.type)) {
+    valueInput = (
+      <select
+        aria-label="Value"
+        value={field.showValue === 'false' ? 'false' : 'true'}
+        onChange={(event) => onPatch({ showValue: event.target.value })}
+      >
+        <option value="true">On</option>
+        <option value="false">Off</option>
+      </select>
+    );
+  } else if (target && CHOICE_TYPES.has(target.type)) {
+    valueInput = (
+      <select
+        aria-label="Value"
+        value={field.showValue}
+        onChange={(event) => onPatch({ showValue: event.target.value })}
+      >
+        <option value="">Choose an option</option>
+        {(target.options || []).map((option, index) => (
+          <option key={`${target.id}-show-${index}`} value={String(optionValue(option, index))}>
+            {option.label || String(optionValue(option, index))}
+          </option>
+        ))}
+      </select>
+    );
+  } else if (target) {
+    valueInput = (
+      <input
+        aria-label="Value"
+        value={field.showValue}
+        placeholder="Value"
+        onChange={(event) => onPatch({ showValue: event.target.value })}
+      />
+    );
+  }
+
+  return (
+    <div className="block-show">
+      <label>
+        Show when
+        <select
+          value={target ? target.id : ''}
+          onChange={(event) => {
+            const next = others.find((item) => item.id === event.target.value);
+            onPatch({
+              showField: next?.id,
+              showOp: 'equals',
+              showValue: next && TOGGLE_TYPES.has(next.type) ? 'true' : '',
+            });
+          }}
+        >
+          <option value="">Always</option>
+          {others.map((item) => (
+            <option key={item.id} value={item.id}>
+              {item.label || item.name}
+            </option>
+          ))}
+        </select>
+      </label>
+      {target ? (
+        <>
+          <label>
+            Is
+            <select
+              value={field.showOp}
+              onChange={(event) => onPatch({ showOp: event.target.value })}
+            >
+              <option value="equals">equal to</option>
+              <option value="notEquals">not equal to</option>
+            </select>
+          </label>
+          <label>
+            Value
+            {valueInput}
+          </label>
+        </>
+      ) : null}
+    </div>
+  );
+}
+
+function Inspector({ field, fields, columns, groups, groupId, onChange, onPlace }) {
   const patch = (partial) => onChange({ ...field, ...partial });
 
   return (
     <div className="block-settings">
-      {groups?.length ? (
+      <Section title="Field" open>
+        {groups?.length ? (
+          <label>
+            Section
+            <select
+              value={groupId || ''}
+              onChange={(event) => onPlace(field.id, event.target.value)}
+            >
+              <option value="">Page</option>
+              {groups.map((group) => (
+                <option key={group.id} value={group.id}>
+                  {group.label || 'Group'}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : null}
         <label>
-          Group
-          <select value={groupId || ''} onChange={(event) => onPlace(field.id, event.target.value)}>
-            <option value="">Page</option>
-            {groups.map((group) => (
-              <option key={group.id} value={group.id}>
-                {group.label || 'Group'}
-              </option>
-            ))}
-          </select>
+          Label
+          <input value={field.label} onChange={(event) => patch({ label: event.target.value })} />
         </label>
-      ) : null}
-      <label>
-        Label
-        <input value={field.label} onChange={(event) => patch({ label: event.target.value })} />
-      </label>
-      <label>
-        Name
-        <input
-          value={field.name}
-          onChange={(event) => patch({ name: event.target.value, nameCustom: true })}
-        />
-      </label>
-      {TEXT_TYPES.has(field.type) ? (
         <label>
-          Placeholder
+          Name
           <input
-            value={field.placeholder || ''}
-            onChange={(event) => patch({ placeholder: event.target.value })}
+            value={field.name}
+            onChange={(event) => patch({ name: event.target.value, nameCustom: true })}
+            onBlur={() => {
+              if (!/^[A-Za-z_$][\w$]*$/.test(field.name)) patch({ name: slugName(field.name) });
+            }}
           />
         </label>
-      ) : null}
-      <label>
-        Helper text
-        <input
-          value={field.helperText || ''}
-          onChange={(event) => patch({ helperText: event.target.value })}
-        />
-      </label>
-      <div className="block-validation">
-        <span>Validation</span>
+        {TEXT_TYPES.has(field.type) || field.type === 'select' ? (
+          <label>
+            {field.type === 'select' ? 'Empty option text' : 'Placeholder'}
+            <input
+              value={field.placeholder || ''}
+              placeholder={field.type === 'select' ? 'Select' : undefined}
+              onChange={(event) => patch({ placeholder: event.target.value })}
+            />
+          </label>
+        ) : null}
+        <label>
+          Helper text
+          <input
+            value={field.helperText || ''}
+            onChange={(event) => patch({ helperText: event.target.value })}
+          />
+        </label>
+        <DefaultValue field={field} onPatch={patch} />
+        {field.options ? (
+          <div className="block-options">
+            <span>Options</span>
+            {field.options.map((option, index) => (
+              <div key={`${field.id}-option-${index}`} className="option-row">
+                <input
+                  aria-label={`Option ${index + 1} label`}
+                  value={option.label}
+                  placeholder="Label"
+                  onChange={(event) =>
+                    patch({
+                      options: editOption(field.options, index, { label: event.target.value }),
+                    })
+                  }
+                />
+                <input
+                  aria-label={`Option ${index + 1} value`}
+                  value={option.value}
+                  placeholder="Value"
+                  onChange={(event) =>
+                    patch({
+                      options: editOption(field.options, index, { value: event.target.value }),
+                    })
+                  }
+                />
+                <label className="option-off" title="Disable this option">
+                  <input
+                    type="checkbox"
+                    aria-label={`Disable option ${index + 1}`}
+                    checked={Boolean(option.disabled)}
+                    onChange={(event) =>
+                      patch({
+                        options: editOption(field.options, index, {
+                          disabled: event.target.checked || undefined,
+                        }),
+                      })
+                    }
+                  />
+                  Off
+                </label>
+                <button
+                  type="button"
+                  aria-label={`Remove option ${index + 1}`}
+                  onClick={() =>
+                    patch({ options: field.options.filter((_, item) => item !== index) })
+                  }
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+            <button
+              type="button"
+              onClick={() =>
+                patch({
+                  options: [
+                    ...field.options,
+                    { value: `option${field.options.length + 1}`, label: 'New option' },
+                  ],
+                })
+              }
+            >
+              Add option
+            </button>
+          </div>
+        ) : null}
+      </Section>
+      <Section title="Validation" open>
         <label className="block-check">
           <input
             type="checkbox"
@@ -611,120 +976,238 @@ function Inspector({ field, columns, groups, groupId, onChange, onPlace }) {
             />
           </label>
         ) : null}
-      </div>
-      {columns > 1 ? (
-        <label>
-          Width
-          <select
-            value={String(field.columnSpan || 1)}
-            onChange={(event) => patch({ columnSpan: Number(event.target.value) })}
-          >
-            <option value="1">One column</option>
-            <option value="2">Full width</option>
-          </select>
-        </label>
-      ) : null}
-      {field.type === 'textarea' ? (
-        <label>
-          Rows
+        {field.type === 'file' && optionalNumber(field.maxSizeMb) ? (
+          <label>
+            Max size message
+            <input
+              value={field.maxSizeMessage || ''}
+              placeholder="Each file must be under …"
+              onChange={(event) => patch({ maxSizeMessage: event.target.value })}
+            />
+          </label>
+        ) : null}
+        {field.type === 'file' && field.accept ? (
+          <label>
+            File type message
+            <input
+              value={field.acceptMessage || ''}
+              placeholder="This file type is not accepted"
+              onChange={(event) => patch({ acceptMessage: event.target.value })}
+            />
+          </label>
+        ) : null}
+        {PATTERN_TYPES.has(field.type) ? (
+          <>
+            <label>
+              Pattern (regular expression)
+              <input
+                value={field.pattern || ''}
+                placeholder="^[A-Z]{2}\d{4}$"
+                spellCheck={false}
+                onChange={(event) => patch({ pattern: event.target.value })}
+              />
+            </label>
+            <label>
+              Pattern message
+              <input
+                value={field.patternMessage || ''}
+                placeholder="Use the expected format"
+                onChange={(event) => patch({ patternMessage: event.target.value })}
+              />
+            </label>
+          </>
+        ) : null}
+      </Section>
+      <Section title="Behavior">
+        <label className="block-check">
           <input
-            type="number"
-            min="2"
-            max="12"
-            value={field.rows || 4}
-            onChange={(event) => patch({ rows: Number(event.target.value) })}
+            type="checkbox"
+            checked={Boolean(field.disabled)}
+            onChange={(event) => patch({ disabled: event.target.checked || undefined })}
           />
+          Disabled
         </label>
-      ) : null}
-      {field.type === 'currency' ? (
-        <>
-          <label>
-            Currency
-            <input
-              value={field.currency || 'BRL'}
-              onChange={(event) => patch({ currency: event.target.value })}
-            />
-          </label>
-          <label>
-            Locale
-            <input
-              value={field.locale || 'pt-BR'}
-              onChange={(event) => patch({ locale: event.target.value })}
-            />
-          </label>
-        </>
-      ) : null}
-      {field.type === 'file' ? (
-        <>
-          <label>
-            Accept
-            <input
-              value={field.accept || ''}
-              placeholder="image/*"
-              onChange={(event) => patch({ accept: event.target.value })}
-            />
-          </label>
+        {TEXT_TYPES.has(field.type) ? (
           <label className="block-check">
             <input
               type="checkbox"
-              checked={Boolean(field.multiple)}
-              onChange={(event) => patch({ multiple: event.target.checked })}
+              checked={Boolean(field.readOnly)}
+              onChange={(event) => patch({ readOnly: event.target.checked || undefined })}
             />
-            Multiple files
+            Read only
           </label>
-        </>
-      ) : null}
-      {field.options ? (
-        <div className="block-options">
-          <span>Options</span>
-          {field.options.map((option, index) => (
-            <div key={`${field.id}-option-${index}`} className="option-row">
+        ) : null}
+        <ShowWhen field={field} fields={fields} onPatch={patch} />
+      </Section>
+      <Section title="Input">
+        {field.type === 'text' ? (
+          <label>
+            Mask
+            <input
+              value={field.mask || ''}
+              placeholder="AA-####"
+              spellCheck={false}
+              onChange={(event) => patch({ mask: event.target.value })}
+            />
+          </label>
+        ) : null}
+        {field.type === 'number' ? (
+          <label>
+            Step
+            <input
+              value={field.step || ''}
+              placeholder="1"
+              onChange={(event) => patch({ step: event.target.value })}
+            />
+          </label>
+        ) : null}
+        {TEXT_TYPES.has(field.type) ? (
+          <label>
+            Autocomplete
+            <select
+              value={field.autoComplete || ''}
+              onChange={(event) => patch({ autoComplete: event.target.value || undefined })}
+            >
+              <option value="">Browser default</option>
+              {AUTOCOMPLETE.map((value) => (
+                <option key={value} value={value}>
+                  {value}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : null}
+        {DATE_TYPES.has(field.type) ? (
+          <label>
+            Display format
+            <input
+              value={field.format || ''}
+              placeholder={
+                field.type === 'time'
+                  ? 'HH:mm'
+                  : field.type === 'datetime'
+                    ? 'dd/MM/yyyy HH:mm'
+                    : 'dd/MM/yyyy'
+              }
+              spellCheck={false}
+              onChange={(event) => patch({ format: event.target.value })}
+            />
+          </label>
+        ) : null}
+        {field.type === 'textarea' ? (
+          <label>
+            Rows
+            <input
+              type="number"
+              min="2"
+              max="12"
+              value={field.rows || 4}
+              onChange={(event) => patch({ rows: Number(event.target.value) })}
+            />
+          </label>
+        ) : null}
+        {field.type === 'currency' ? (
+          <>
+            <label>
+              Currency
               <input
-                aria-label={`Option ${index + 1} label`}
-                value={option.label}
-                placeholder="Label"
-                onChange={(event) =>
-                  patch({
-                    options: editOption(field.options, index, { label: event.target.value }),
-                  })
-                }
+                value={field.currency || 'BRL'}
+                onChange={(event) => patch({ currency: event.target.value })}
               />
+            </label>
+            <label>
+              Locale
               <input
-                aria-label={`Option ${index + 1} value`}
-                value={option.value}
-                placeholder="Value"
-                onChange={(event) =>
-                  patch({
-                    options: editOption(field.options, index, { value: event.target.value }),
-                  })
-                }
+                value={field.locale || 'pt-BR'}
+                onChange={(event) => patch({ locale: event.target.value })}
               />
-              <button
-                type="button"
-                aria-label={`Remove option ${index + 1}`}
-                onClick={() =>
-                  patch({ options: field.options.filter((_, item) => item !== index) })
-                }
-              >
-                ×
-              </button>
-            </div>
-          ))}
-          <button
-            type="button"
-            onClick={() =>
-              patch({
-                options: [
-                  ...field.options,
-                  { value: `option${field.options.length + 1}`, label: 'New option' },
-                ],
-              })
-            }
-          >
-            Add option
-          </button>
-        </div>
-      ) : null}
+            </label>
+          </>
+        ) : null}
+        {field.type === 'file' ? (
+          <>
+            <label>
+              Accept
+              <input
+                value={field.accept || ''}
+                placeholder="image/*"
+                onChange={(event) => patch({ accept: event.target.value })}
+              />
+            </label>
+            <label>
+              Button text
+              <input
+                value={field.buttonLabel || ''}
+                placeholder={field.multiple ? 'Choose files' : 'Choose file'}
+                onChange={(event) => patch({ buttonLabel: event.target.value })}
+              />
+            </label>
+            <label className="block-check">
+              <input
+                type="checkbox"
+                checked={Boolean(field.multiple)}
+                onChange={(event) => patch({ multiple: event.target.checked })}
+              />
+              Multiple files
+            </label>
+          </>
+        ) : null}
+        {TOGGLE_TYPES.has(field.type) ? (
+          <label>
+            Label position
+            <select
+              value={field.labelPlacement || 'end'}
+              onChange={(event) => patch({ labelPlacement: event.target.value })}
+            >
+              <option value="end">After</option>
+              <option value="start">Before</option>
+              <option value="top">Above</option>
+              <option value="bottom">Below</option>
+            </select>
+          </label>
+        ) : null}
+      </Section>
+      <Section title="Appearance">
+        {columns > 1 ? (
+          <label>
+            Width
+            <select
+              value={String(field.columnSpan || 1)}
+              onChange={(event) => patch({ columnSpan: Number(event.target.value) })}
+            >
+              <option value="1">One column</option>
+              <option value="2">Full width</option>
+            </select>
+          </label>
+        ) : null}
+        {TEXT_TYPES.has(field.type) || field.type === 'select' || DATE_TYPES.has(field.type) ? (
+          <label>
+            Variant
+            <select
+              value={field.variant || ''}
+              onChange={(event) => patch({ variant: event.target.value || undefined })}
+            >
+              <option value="">Theme default</option>
+              <option value="outlined">Outlined</option>
+              <option value="filled">Filled</option>
+              <option value="standard">Standard</option>
+            </select>
+          </label>
+        ) : null}
+        {field.type !== 'radio' ? (
+          <label>
+            Size
+            <select
+              value={field.size || ''}
+              onChange={(event) => patch({ size: event.target.value || undefined })}
+            >
+              <option value="">Theme default</option>
+              <option value="small">Small</option>
+              <option value="medium">Medium</option>
+            </select>
+          </label>
+        ) : null}
+      </Section>
     </div>
   );
 }
@@ -735,6 +1218,7 @@ function editOption(options, index, partial) {
 
 function FieldBlock({
   field,
+  fields,
   index,
   total,
   columns,
@@ -744,6 +1228,7 @@ function FieldBlock({
   appearance,
   onSelect,
   onShift,
+  onDuplicate,
   onRemove,
   onChange,
   onPlace,
@@ -766,7 +1251,7 @@ function FieldBlock({
       onDrop={(event) => {
         event.preventDefault();
         event.stopPropagation();
-        onDrop(groupId, field.id);
+        onDrop(field.id);
       }}
     >
       <div className="block-bar">
@@ -811,6 +1296,16 @@ function FieldBlock({
           </button>
           <button
             type="button"
+            aria-label={`Duplicate ${field.label}`}
+            onClick={(event) => {
+              event.stopPropagation();
+              onDuplicate(field.id);
+            }}
+          >
+            Copy
+          </button>
+          <button
+            type="button"
             aria-label={`Remove ${field.label}`}
             onClick={(event) => {
               event.stopPropagation();
@@ -824,9 +1319,11 @@ function FieldBlock({
       <div className="block-preview">
         <BlockPreview field={field} appearance={appearance} />
       </div>
+      {field.showField ? <p className="block-note">Shown only when its condition is met.</p> : null}
       {selected ? (
         <Inspector
           field={field}
+          fields={fields}
           columns={columns}
           groups={groups}
           groupId={groupId}
@@ -848,15 +1345,52 @@ function moveList(list, id, direction) {
   return next;
 }
 
-function reorderList(list, fromId, toId) {
-  if (!fromId || fromId === toId) return list;
-  const next = [...list];
-  const from = next.findIndex((item) => item.id === fromId);
-  const to = next.findIndex((item) => item.id === toId);
-  if (from < 0 || to < 0) return list;
-  const [item] = next.splice(from, 1);
-  next.splice(to, 0, item);
-  return next;
+function takeBlock(blocks, id) {
+  let taken = null;
+  const rest = blocks
+    .map((block) => {
+      if (block.id === id) {
+        taken = block;
+        return null;
+      }
+      if (block.kind !== 'group') return block;
+      const index = block.fields.findIndex((field) => field.id === id);
+      if (index < 0) return block;
+      taken = block.fields[index];
+      return { ...block, fields: block.fields.filter((field) => field.id !== id) };
+    })
+    .filter(Boolean);
+  return [taken, rest];
+}
+
+function insertBefore(list, item, targetId) {
+  const index = list.findIndex((entry) => entry.id === targetId);
+  if (index < 0) return [...list, item];
+  return [...list.slice(0, index), item, ...list.slice(index)];
+}
+
+function dropBlock(blocks, fromId, toId) {
+  if (!fromId || fromId === toId) return blocks;
+  const [moving, rest] = takeBlock(blocks, fromId);
+  if (!moving) return blocks;
+  const parent = rest.find(
+    (block) => block.kind === 'group' && block.fields.some((field) => field.id === toId),
+  );
+  if (!parent) return insertBefore(rest, moving, toId);
+  if (moving.kind === 'group') return insertBefore(rest, moving, parent.id);
+  return rest.map((block) =>
+    block.id === parent.id ? { ...block, fields: insertBefore(block.fields, moving, toId) } : block,
+  );
+}
+
+function dropIntoGroup(blocks, fromId, groupId) {
+  if (!fromId || fromId === groupId) return blocks;
+  const [moving, rest] = takeBlock(blocks, fromId);
+  if (!moving) return blocks;
+  if (moving.kind === 'group') return insertBefore(rest, moving, groupId);
+  return rest.map((block) =>
+    block.id === groupId ? { ...block, fields: [...block.fields, moving] } : block,
+  );
 }
 
 export default function Builder({ appearance }) {
@@ -867,16 +1401,7 @@ export default function Builder({ appearance }) {
   const [dragId, setDragId] = useState(null);
   const [panel, setPanel] = useState('schema');
   const [previewValues, setPreviewValues] = useState(null);
-  const [page, setPage] = useState(
-    () =>
-      stored?.page ?? {
-        title: '',
-        columns: 1,
-        submitLabel: '',
-        submitWide: false,
-        submitAlign: 'left',
-      },
-  );
+  const [page, setPage] = useState(() => ({ ...EMPTY_PAGE, ...stored?.page }));
   const [copiedJson, setCopiedJson] = useState('');
 
   useEffect(() => {
@@ -887,17 +1412,22 @@ export default function Builder({ appearance }) {
   const mode = appearance?.tokens?.mode;
   const copied = copiedJson === json;
   const groups = blocks.filter((block) => block.kind === 'group');
+  const allFields = fieldsIn(blocks);
+  const tabs = page.layout === 'tabs';
+  const sectionName = tabs ? 'Tab' : 'Group';
 
   function addBlock(type) {
-    if (type === 'group') {
+    if (type === 'group' || type === 'tab') {
+      const nextLayout = type === 'tab' ? 'tabs' : groups.length ? page.layout : 'groups';
       const group = {
         kind: 'group',
         id: newFormId(),
-        label: `Group ${groups.length + 1}`,
+        label: `${nextLayout === 'tabs' ? 'Tab' : 'Group'} ${groups.length + 1}`,
         description: '',
         columns: page.columns > 1 ? page.columns : 1,
         fields: [],
       };
+      if (nextLayout !== page.layout) setPage((current) => ({ ...current, layout: nextLayout }));
       setBlocks((current) => [...current, group]);
       setSelectedId(group.id);
       return;
@@ -971,15 +1501,44 @@ export default function Builder({ appearance }) {
     });
   }
 
-  function move(parentId, fromId, toId) {
-    setBlocks((current) => {
-      if (!parentId) return reorderList(current, fromId, toId);
-      return current.map((block) =>
-        block.id === parentId
-          ? { ...block, fields: reorderList(block.fields, fromId, toId) }
-          : block,
-      );
-    });
+  function dropOn(targetId) {
+    const fromId = dragId;
+    setDragId(null);
+    setBlocks((current) => dropBlock(current, fromId, targetId));
+  }
+
+  function dropInto(groupId) {
+    const fromId = dragId;
+    setDragId(null);
+    setBlocks((current) => dropIntoGroup(current, fromId, groupId));
+  }
+
+  function duplicateField(id) {
+    const source = fieldsIn(blocks).find((field) => field.id === id);
+    if (!source) return;
+    const copy = {
+      ...source,
+      id: crypto.randomUUID(),
+      label: `${source.label} copy`,
+      name: uniqueName(fieldsIn(blocks), `${source.name}Copy`),
+      nameCustom: false,
+      options: source.options?.map((option) => ({ ...option })),
+    };
+    setBlocks((current) =>
+      current.flatMap((block) => {
+        if (block.id === id) return [block, copy];
+        if (block.kind !== 'group' || !block.fields.some((field) => field.id === id)) {
+          return [block];
+        }
+        return [
+          {
+            ...block,
+            fields: block.fields.flatMap((field) => (field.id === id ? [field, copy] : [field])),
+          },
+        ];
+      }),
+    );
+    setSelectedId(copy.id);
   }
 
   function shift(parentId, id, direction) {
@@ -1007,7 +1566,7 @@ export default function Builder({ appearance }) {
     setBlocks([]);
     setSelectedId(null);
     setPreviewValues(null);
-    setPage({ title: '', columns: 1, submitLabel: '', submitWide: false, submitAlign: 'left' });
+    setPage(EMPTY_PAGE);
   }
 
   async function copySchema() {
@@ -1033,8 +1592,11 @@ export default function Builder({ appearance }) {
     <div className="builder">
       <div className="builder-canvas">
         <div className="builder-palette" role="toolbar" aria-label="Add a block">
-          <button type="button" onClick={() => addBlock('group')}>
+          <button type="button" className="is-section" onClick={() => addBlock('group')}>
             Group
+          </button>
+          <button type="button" className="is-section" onClick={() => addBlock('tab')}>
+            Tab
           </button>
           {BLOCKS.map((block) => (
             <button key={block.type} type="button" onClick={() => addBlock(block.type)}>
@@ -1074,6 +1636,43 @@ export default function Builder({ appearance }) {
               >
                 <option value="1">1</option>
                 <option value="2">2</option>
+              </select>
+            </label>
+            <label className="builder-page-description">
+              Description
+              <input
+                value={page.description}
+                placeholder="Shown under the title"
+                onChange={(event) =>
+                  setPage((current) => ({ ...current, description: event.target.value }))
+                }
+              />
+            </label>
+            <label>
+              Sections
+              <select
+                value={page.layout}
+                disabled={!groups.length}
+                title={groups.length ? undefined : 'Add a group or a tab first'}
+                onChange={(event) =>
+                  setPage((current) => ({ ...current, layout: event.target.value }))
+                }
+              >
+                <option value="groups">Stacked groups</option>
+                <option value="tabs">Tabs</option>
+              </select>
+            </label>
+            <label>
+              Check fields
+              <select
+                value={page.validateOn}
+                onChange={(event) =>
+                  setPage((current) => ({ ...current, validateOn: event.target.value }))
+                }
+              >
+                <option value="blur">When a field loses focus</option>
+                <option value="change">While typing</option>
+                <option value="submit">On submit</option>
               </select>
             </label>
           </div>
@@ -1119,7 +1718,7 @@ export default function Builder({ appearance }) {
           {blocks.length === 0 ? (
             <div className="builder-empty">
               <p>This page is blank.</p>
-              <p>Add a field or a group. Each one is written into the schema.</p>
+              <p>Add a field, a group, or a tab. Each one is written into the schema.</p>
             </div>
           ) : (
             <div className="builder-stack">
@@ -1137,8 +1736,7 @@ export default function Builder({ appearance }) {
                     }}
                     onDrop={(event) => {
                       event.preventDefault();
-                      move(null, dragId || event.dataTransfer.getData('text/plain'), block.id);
-                      setDragId(null);
+                      dropInto(block.id);
                     }}
                   >
                     <div className="block-bar">
@@ -1157,11 +1755,11 @@ export default function Builder({ appearance }) {
                       >
                         ⋮⋮
                       </button>
-                      <span>Group</span>
+                      <span>{sectionName}</span>
                       <div className="block-actions">
                         <button
                           type="button"
-                          aria-label="Move group up"
+                          aria-label={`Move ${sectionName.toLowerCase()} up`}
                           disabled={index === 0}
                           onClick={(event) => {
                             event.stopPropagation();
@@ -1172,7 +1770,7 @@ export default function Builder({ appearance }) {
                         </button>
                         <button
                           type="button"
-                          aria-label="Move group down"
+                          aria-label={`Move ${sectionName.toLowerCase()} down`}
                           disabled={index === blocks.length - 1}
                           onClick={(event) => {
                             event.stopPropagation();
@@ -1234,7 +1832,8 @@ export default function Builder({ appearance }) {
                     )}
                     {block.fields.length === 0 ? (
                       <p className="builder-group-empty">
-                        This group is empty. Add a field while it is selected.
+                        This {sectionName.toLowerCase()} is empty. Select it and add a field, or
+                        drag a field here.
                       </p>
                     ) : (
                       <div
@@ -1245,6 +1844,7 @@ export default function Builder({ appearance }) {
                           <FieldBlock
                             key={field.id}
                             field={field}
+                            fields={allFields}
                             index={fieldIndex}
                             total={block.fields.length}
                             columns={block.columns || 1}
@@ -1254,14 +1854,12 @@ export default function Builder({ appearance }) {
                             appearance={appearance}
                             onSelect={setSelectedId}
                             onShift={shift}
+                            onDuplicate={duplicateField}
                             onRemove={removeBlock}
                             onChange={updateField}
                             onPlace={placeField}
                             onDragStart={setDragId}
-                            onDrop={(parentId, targetId) => {
-                              move(parentId, dragId, targetId);
-                              setDragId(null);
-                            }}
+                            onDrop={dropOn}
                           />
                         ))}
                       </div>
@@ -1271,6 +1869,7 @@ export default function Builder({ appearance }) {
                   <FieldBlock
                     key={block.id}
                     field={block}
+                    fields={allFields}
                     index={index}
                     total={blocks.length}
                     columns={page.columns}
@@ -1280,14 +1879,12 @@ export default function Builder({ appearance }) {
                     appearance={appearance}
                     onSelect={setSelectedId}
                     onShift={shift}
+                    onDuplicate={duplicateField}
                     onRemove={removeBlock}
                     onChange={updateField}
                     onPlace={placeField}
                     onDragStart={setDragId}
-                    onDrop={(parentId, targetId) => {
-                      move(parentId, dragId, targetId);
-                      setDragId(null);
-                    }}
+                    onDrop={dropOn}
                   />
                 ),
               )}

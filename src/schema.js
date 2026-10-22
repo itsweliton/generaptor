@@ -35,11 +35,15 @@ function validatorBag(field, type) {
   assign('required', field.required);
   assign('minLength', field.minLength);
   assign('maxLength', field.maxLength);
+  if (field.pattern != null && source.pattern == null) {
+    source.pattern = { value: field.pattern, message: field.patternMessage };
+  }
   if (type === 'number') {
     assign('min', field.min);
     assign('max', field.max);
   }
   if (type === 'email') assign('email', true);
+  if (type === 'url') assign('url', true);
   if (type === 'phone') assign('telephone', true);
   if (type === 'cpf') assign('cpf', true);
   if (type === 'cep') assign('cep', true);
@@ -166,6 +170,7 @@ export function normalizeSchema(schema = {}) {
     columns: schema.columns || 1,
     submitLabel: schema.submitLabel,
     button: schema.button,
+    validateOn: schema.validateOn,
     locale: schema.locale,
     fields,
     groups,
