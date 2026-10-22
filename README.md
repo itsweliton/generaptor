@@ -1,189 +1,304 @@
-
 [![npm](https://img.shields.io/npm/v/generaptor.svg?maxAge=2592000)](https://www.npmjs.com/package/generaptor)
 [![downloads](https://img.shields.io/npm/dt/generaptor.svg?maxAge=2592000)](https://www.npmjs.com/package/generaptor)
-[![Inline docs](http://inch-ci.org/github/welitonderesende/generaptor.svg?branch=master)](http://inch-ci.org/github/welitonderesende/generaptor)
 
-[![https://nodei.co/npm/generaptor.png?downloads=true&downloadRank=true&stars=true](https://nodei.co/npm/generaptor.png?downloads=true&downloadRank=true&stars=true)](https://www.npmjs.com/package/generaptor)
+Generaptor builds a React form from a schema. It covers the usual fields, Brazilian masks, validation, groups, tabs, conditional fields, uploads, and custom components. Styles are a separate object, so the same schema can wear more than one look.
 
-## This repo is a Alpha version and therefore things can change very suddenly
-- Please feel free to send new issues, or PR's 
+The examples page is the fastest way to see it. It includes a form builder: a blank page of blocks on the left, and the schema those blocks export on the right.
 
-### Getting Stated: 
-`npm i generaptor`
-
-`import Generaptor from 'generaptor'`;
-
-```
-const formGen = new Generaptor();
-const formGenerated = formGen.create(schema, options);
-
-const App = () => <>{formGenerated}</>;
-
+```bash
+npm install
+npm run dev
 ```
 
-##  This schema can change, but right now is like the following:
+## Install
+
+```bash
+npm install generaptor react react-dom @mui/material @emotion/react @emotion/styled @mui/x-date-pickers date-fns
 ```
+
+```jsx
+import { FormGenerator, defineStyles } from 'generaptor';
+import 'generaptor/style.css';
+
+const look = defineStyles({
+  primary: '#1f4d3a',
+  secondary: '#c4552a',
+  radius: 14,
+  variant: 'outlined',
+  density: 'comfortable',
+});
+
+export function Join() {
+  return (
+    <FormGenerator
+      schema={schema}
+      {...look}
+      className="join-form"
+      button={{ label: 'Create account' }}
+      onSubmit={(values, { raw }) => {
+        console.log(values, raw);
+      }}
+    />
+  );
+}
+```
+
+`values` are what the inputs show. `raw` is the unmasked payload: digits for phone, CPF, and CEP, and a number for currency.
+
+The older factory still works:
+
+```js
+import Generaptor from 'generaptor';
+
+const form = new Generaptor().create(schema, {
+  button: { label: 'Save' },
+  onSubmit: (values) => console.log(values),
+});
+```
+
+## Schema
+
+```js
 const schema = {
+  layout: 'stack', // stack | groups | tabs
+  columns: 2,
   fields: [
+    { name: 'name', label: 'Name', required: true, placeholder: 'Ada' },
+    { name: 'email', type: 'email', label: 'Email', required: true },
+    { name: 'password', type: 'password', label: 'Password', minLength: 8 },
+    { name: 'seats', type: 'number', label: 'Seats', min: 1, max: 10 },
+    { name: 'about', type: 'textarea', label: 'About', columnSpan: 2 },
     {
-      id: `nameInput`,
-      name: `nameInput`,
-      type: `input`,
-      inputType: `text`,
-      initialValue: ``,
-      label: `Name`,
-      placeholder: `Name`,
-    },
-    {
-      id: `passwordInput`,
-      type: `input`,
-      inputType: `password`,
-      name: `passwordInput`,
-      label: `Password`,
-      initialValue: ``,
-      placeholder: `password`,
-    },
-    {
-      id: `numberInput`,
-      type: `number`,
-      inputType: `Number`,
-      name: `NumberInput`,
-      label: `Number`,
-      initialValue: ``,
-      placeholder: `Number`,
-    },
-    {
-      id: `emailInput`,
-      type: `email`,
-      inputType: `email`,
-      name: `emailInput`,
-      label: `email`,
-      initialValue: ``,
-      placeholder: `email`,
-    },
-    {
-      id: `checkboxInput`,
-      type: `checkbox`,
-      inputType: `checkbox`,
-      name: `checkboxInput`,
-      label: `checkbox`,
-      initialValue: false,
-    },
-    {
-      id: `dateInput`,
-      type: `date`,
-      inputType: `date`,
-      name: `dateInput`,
-      label: `date`,
-      initialValue: new Date(),
-      format: `dd/MM/yyyy`,
-    },
-    {
-      id: `hourInput`,
-      type: `hour`,
-      inputType: `hour`,
-      name: `hourInput`,
-      label: `hour`,
-      initialValue: new Date(),
-      format: `MM/dd/yyyy`,
-    },
-    {
-      id: `selectInput`,
-      type: `select`,
-      inputType: `select`,
-      name: `selectInput`,
-      label: `select`,
-      initialValue: false,
-      helperText: `A helper text used`,
+      name: 'plan',
+      type: 'select',
+      label: 'Plan',
       options: [
-        {
-          value: 234,
-          label: `Item 2`,
-        },
-        {
-          value: 232,
-          label: `Item 2`,
-        },
-        {
-          value: 235,
-          label: `Item 3`,
-        },
+        { value: 'studio', label: 'Studio' },
+        { value: 'house', label: 'House' },
       ],
     },
     {
-      id: `radioInput`,
-      type: `radio`,
-      inputType: `radio`,
-      name: `radioInput`,
-      label: `radio`,
-      initialValue: false,
-      legend: `Notice radio value must be a string`,
+      name: 'contact',
+      type: 'radio',
+      label: 'Contact',
       options: [
-        {
-          value: `something`,
-          label: `Radios 2`,
-        },
-        {
-          value: `234`,
-          label: `Radio 3`,
-        },
-        {
-          value: `232`,
-          label: `Item 3`,
-          disabled: true,
-        },
+        { value: 'email', label: 'Email' },
+        { value: 'phone', label: 'Phone', disabled: true },
+      ],
+    },
+    { name: 'updates', type: 'checkbox', label: 'Send notes' },
+    { name: 'alerts', type: 'switch', label: 'Alerts' },
+    { name: 'start', type: 'date', label: 'Start', format: 'dd/MM/yyyy' },
+    { name: 'hour', type: 'time', label: 'Time', format: 'HH:mm' },
+    {
+      name: 'cover',
+      type: 'file',
+      label: 'Cover',
+      accept: 'image/*',
+      maxSize: 2_000_000,
+    },
+  ],
+};
+```
+
+Older field names still resolve: `type: 'input'` with `inputType`, `type: 'hour'`, and `type: 'upload'`.
+
+A field accepts `helperText`, `placeholder`, `disabled`, `readOnly`, `autoComplete`, `sx`, `className`, `variant`, and `size`.
+
+## Validation
+
+Validators run on blur, then again as the field changes. Submit validates everything and cancels the submit when something is wrong.
+
+```js
+{
+  name: 'email',
+  type: 'email',
+  label: 'Email',
+  required: 'Email is required',
+  validators: {
+    custom: (value) => value.endsWith('@studio.dev') || 'Use your studio email',
+  },
+}
+```
+
+Built in: `required`, `minLength`, `maxLength`, `min`, `max`, `email`, `telephone`, `cpf`, `cep`, `currency`, `date`, and `custom`.
+
+`type: 'email' | 'phone' | 'cpf' | 'cep' | 'currency' | 'date'` turns the matching check on for you. Pass `validators: { cpf: false }` to opt out. A string or `{ message }` replaces the default error. `minLength` and `maxLength` accept a number or `{ value, message }`. `verifyValidation(valid, errors, values)` runs after each check. A ref can call `validate()`, `getValues()`, `getRawValues()`, and `reset()`.
+
+```jsx
+<FormGenerator
+  ref={formRef}
+  validateOn="blur" // blur | change | submit
+  onChange={(values, meta) => meta.valid}
+  onSubmit={(values, meta) => meta.raw}
+  onInvalid={(values, errors) => errors}
+  verifyValidation={(valid, errors) => valid}
+/>
+```
+
+`onHandleChange` is the same callback as `onChange`. `onClick` and `button.onClick` run after a valid submit.
+
+## Masks
+
+| Mask     | Type              | What you see      | `raw` on submit                   |
+| -------- | ----------------- | ----------------- | --------------------------------- |
+| Phone    | `phone`           | `(11) 98765-4321` | digits                            |
+| CEP      | `cep`             | `01310-100`       | 8 digits                          |
+| CPF      | `cpf`             | `529.982.247-25`  | 11 digits                         |
+| Currency | `currency`        | `R$ 10,00`        | number, last two digits are cents |
+| Pattern  | `mask: 'AA-####'` | `AB-1234`         | letters and digits                |
+
+`#` is a digit and `A` is a letter. Currency uses `locale` and `currency` (`pt-BR` / `BRL` by default). You can also pass `mask` as a function.
+
+## Layout
+
+Groups and tabs use the same `groups` list. `columns` on the schema or a group sets the grid. `columnSpan` lets one field cross columns. `layout: 'tabs'` keeps the groups in tabs and moves to the first invalid tab on submit.
+
+```js
+const schema = {
+  layout: 'groups',
+  groups: [
+    {
+      id: 'patient',
+      label: 'Patient',
+      description: 'Who is coming in.',
+      columns: 2,
+      fields: [
+        { name: 'name', label: 'Name', required: true, columnSpan: 2 },
+        { name: 'email', type: 'email', label: 'Email' },
       ],
     },
   ],
 };
 ```
 
+Flat fields can set `group: 'Patient'` instead of a `groups` array.
 
-## Supported Components
-- Input Text 
-  - text ✅
-  - mail ✅
-- Input Number
-  - number ✅
-- Checkbox ✅
-- Select ✅
-- Radio ✅
-- Date picker 
-  - hour ✅
-  - date ✅
+## Conditional fields
 
-## Supported Masks
-- phone [mask] ⛔️
-- cep [mask] ️️️️⛔️
-- cpf [mask] ⛔️
-- currency [mask] ⛔️
+```js
+{ name: 'ticket', label: 'Ticket', showIf: { field: 'request', equals: 'change' } }
+{ name: 'region', label: 'Region', showIf: { field: 'hosting', equals: true } }
+{ name: 'launch', type: 'date', label: 'Launch', showIf: (values) => values.request === 'new' }
+```
 
-## Special Components 
-- Button ️️⛔️
-- Upload ⛔️
+`oneOf` and `notEquals` work the same way. Hidden fields stay out of validation and out of the submit payload.
 
+## Custom components
 
-## Validations to support: 
-- minLength ⛔️
-- maxLength ⛔️
-- required ⛔️
-- email ⛔️
-- telephone ⛔️
-- currency values ⛔️
-- custom validators ⛔️
+```jsx
+function RatingField({ field, value, onChange, error }) {
+  return (
+    <fieldset>
+      <legend>{field.label}</legend>
+      {[1, 2, 3, 4, 5].map((step) => (
+        <button type="button" key={step} onClick={() => onChange(step)}>
+          {step}
+        </button>
+      ))}
+      {error ? <p>{error}</p> : null}
+    </fieldset>
+  );
+}
 
-## Functions to support: 
-- onSubmit ⛔️
-- onHandleChange ⛔️
-- onClick ⛔️
-- verifyValidation ⛔️
+<FormGenerator
+  components={{ rating: RatingField }}
+  schema={{
+    fields: [
+      { name: 'score', type: 'custom', component: 'rating', label: 'Score', required: true },
+    ],
+  }}
+/>;
+```
 
-## LayoutsFormats to support:
-- Group Forms ⛔️
-- Tab Forms ⛔️
+A component in `components` whose key matches a built-in `type` replaces that control everywhere.
 
+## Styles
 
-In the future: 
-- Be able to pass custom components, so customizability would be easier
-- Be able to customize the structure from schema
-- Conditional Rendering, in accords with determined option, something different should render
+`defineStyles` returns a Material theme plus the `styles` and `classNames` props Generaptor understands. Spread it onto the form.
+
+```js
+defineStyles({
+  mode: 'light', // or dark
+  primary: '#1f4d3a',
+  secondary: '#c4552a',
+  background: '#fbf7f2',
+  paper: '#fbf7f2',
+  text: '#1d1914',
+  muted: '#6f675e',
+  error: '#9b2335',
+  radius: 14,
+  gap: 18,
+  columns: 2,
+  density: 'comfortable', // or compact
+  variant: 'outlined', // outlined | filled | standard
+  fontFamily: '"Outfit", sans-serif',
+  field: { size: 'medium', sx: { maxWidth: 480 } },
+  button: { variant: 'contained', fullWidth: false },
+  classNames: { form: 'join-form', field: 'join-field' },
+  components: {
+    MuiOutlinedInput: {
+      styleOverrides: { root: { backgroundColor: '#fff' } },
+    },
+  },
+});
+```
+
+Presets you can start from: `stylePresets.paper`, `stylePresets.night`, `stylePresets.tide`.
+
+You can also pass a Material `theme` yourself. Per-field `sx`, `className`, `variant`, and `size` win over the shared field style.
+
+These CSS variables are set on the form, so your own components and the group chrome follow the same tokens:
+
+```css
+.my-form {
+  --gr-primary: #9a3412;
+  --gr-on-primary: #fff;
+  --gr-text: #1d1914;
+  --gr-muted: #6f675e;
+  --gr-paper: #fff8f3;
+  --gr-error: #9b2335;
+  --gr-radius: 18px;
+  --gr-gap: 20px;
+  --gr-columns: 2;
+  --gr-font: Georgia, serif;
+  --gr-border: #eadfd4;
+  --gr-group-bg: #fff;
+}
+```
+
+Hooks you can target: `.generaptor`, `.generaptor-field`, `.generaptor-group`, `.generaptor-grid`, `.generaptor-actions`, plus `data-layout`, `data-density`, and `data-variant` on the form.
+
+## Builder
+
+The first item in the examples nav is the builder. Add a block for any field the library renders: text, email, password, number, long text, select, radio, checkbox, switch, date, time, date and time, phone, CEP, CPF, currency, and upload. Click a block to edit its label, name, placeholder, helper text, options, and width.
+
+Validation on a block is written into the schema:
+
+- required, with an optional message
+- min and max length, with optional messages
+- min and max for numbers, with optional messages
+- the format check for email, phone, CPF, CEP, currency, and date, which you can turn off or give a message
+- min and max amount for currency
+- max file size in megabytes
+
+The panel on the right is the object you pass to `FormGenerator`. Copy or download it. The draft, including validation, stays in `localStorage` under `generaptor.builder`, so leaving the builder or reloading the page keeps the form.
+
+## Deploy the examples
+
+`npm run build` writes the library to `dist/`. The examples site is a separate build, which is what Vercel runs:
+
+```bash
+npm run build:site
+```
+
+`vercel.json` points that command at the `site/` folder. Import the GitHub repository in Vercel and leave the defaults from that file.
+
+## Scripts
+
+```bash
+npm run dev        # examples page
+npm test           # vitest
+npm run build      # library build in dist/
+npm run build:site # examples site in site/
+```

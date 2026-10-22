@@ -1,1 +1,0 @@
-const isRequired = config => value => value === '' ? config.message : null;

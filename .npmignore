@@ -1,8 +1,6 @@
-src/
-public
+src
+node_modules
 coverage
-package.json
-.babelrc
-.eslintrc
-webpack.config.js
-yarn-error.log
+.vite
+*.local
+.DS_Store
